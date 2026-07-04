@@ -162,12 +162,12 @@ export default function Header() {
 
       {/* Main Brand Header */}
       <div className="gov-brand-header">
-        <div className="gov-brand-left">
+        <Link to="/" className="gov-brand-left" style={{ textDecoration: 'none', color: 'inherit' }}>
           <div className="brand-text">
             <h1 className="main-title">{t("portal_title")}</h1>
             <p className="sub-title">{t("portal_subtitle")}</p>
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* Nav Bar */}
