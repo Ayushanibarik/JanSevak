@@ -169,6 +169,24 @@ export default function Header() {
           </div>
         </div>
       </div>
+
+      {/* Nav Bar */}
+      <div className="gov-nav-bar">
+        <div className="nav-links">
+          <Link to="/" className="nav-link-item">{t("home")}</Link>
+          <Link to="/grievance/new" className="nav-link-item">{t("file_grievance")}</Link>
+          <Link to="/grievance/track" className="nav-link-item">{t("track_grievance")}</Link>
+          <Link to="/heatmap" className="nav-link-item">{t("interactive_map")}</Link>
+          <Link to="/dashboard/public" className="nav-link-item">{t("public_stats")}</Link>
+        </div>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <Link to="/login" className="login-btn-nav">
+            <User className="w-4 h-4 mr-1.5" />
+            {t("officer_login")}
+          </Link>
+        </div>
+      </div>
     </header>
   );
 }
