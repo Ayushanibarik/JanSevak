@@ -101,6 +101,7 @@ async def create_grievance(
         print(f"Warning: GPS mismatch for {title}")
         
     # 7. Vision (YOLOv8 + UNet)
+    ai_img_conf = 0.8
     if filepath:
         vision_results = analyze_civic_image(filepath)
         if vision_results["potholes"] > 0:
@@ -109,6 +110,11 @@ async def create_grievance(
         elif vision_results["garbage_piles"] > 0:
             department = Department.SANITATION
             sub_category = "garbage_not_collected"
+        
+        if vision_results.get("boxes"):
+            ai_img_conf = max([box["confidence"] for box in vision_results["boxes"]])
+        else:
+            ai_img_conf = 0.75
             
     # Merge emergency indicators from text, sentiment, and vision
     final_is_emergency = is_emergency or ai_result.get("is_emergency", False) or sentiment_scores["is_urgent"]

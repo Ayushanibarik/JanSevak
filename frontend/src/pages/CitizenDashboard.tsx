@@ -29,7 +29,14 @@ export default function CitizenDashboard() {
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001'}/grievances/`);
       if (response.ok) {
         const data = await response.json();
-        setGrievances(data);
+        const localGrievances = JSON.parse(localStorage.getItem("local_grievances") || "[]");
+        const combined = [...data];
+        localGrievances.forEach((lg: any) => {
+          if (!combined.some(cg => cg.grievance_token === lg.grievance_token)) {
+            combined.unshift(lg);
+          }
+        });
+        setGrievances(combined);
       } else {
         setMockCitizenGrievances();
       }
@@ -41,7 +48,7 @@ export default function CitizenDashboard() {
   };
 
   const setMockCitizenGrievances = () => {
-    setGrievances([
+    const mock = [
       {
         grievance_token: "GR-2026-BBSR-WS-004512",
         department: "water_supply",
@@ -60,7 +67,16 @@ export default function CitizenDashboard() {
         priority: "medium",
         created_at: new Date(Date.now() - 120 * 3600 * 1000).toISOString()
       }
-    ]);
+    ];
+
+    const localGrievances = JSON.parse(localStorage.getItem("local_grievances") || "[]");
+    const combined = [...localGrievances];
+    mock.forEach((m) => {
+      if (!combined.some(cg => cg.grievance_token === m.grievance_token)) {
+        combined.push(m);
+      }
+    });
+    setGrievances(combined);
   };
 
   useEffect(() => {

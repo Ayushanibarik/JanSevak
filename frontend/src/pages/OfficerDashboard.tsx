@@ -36,7 +36,27 @@ export default function OfficerDashboard() {
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001'}/grievances/?department=${department}`);
       if (response.ok) {
         const data = await response.json();
-        setGrievances(data);
+        
+        // Merge with local storage
+        const localGrievances = JSON.parse(localStorage.getItem("local_grievances") || "[]");
+        const combined = [...data];
+        localGrievances.forEach((lg: any) => {
+          if (lg.department === department && !combined.some(cg => cg.grievance_token === lg.grievance_token)) {
+            combined.unshift({
+              id: Math.floor(Math.random() * 100000),
+              grievance_token: lg.grievance_token,
+              department: lg.department,
+              sub_category: lg.sub_category,
+              title: lg.title,
+              description: lg.description,
+              status: lg.status,
+              priority: lg.priority,
+              created_at: lg.created_at,
+              escalation_deadline: new Date(new Date(lg.created_at).getTime() + 48 * 3600 * 1000).toISOString()
+            });
+          }
+        });
+        setGrievances(combined);
       } else {
         setMockAssignedGrievances();
       }
@@ -48,7 +68,7 @@ export default function OfficerDashboard() {
   };
 
   const setMockAssignedGrievances = () => {
-    setGrievances([
+    const mock = [
       {
         id: 1,
         grievance_token: "GR-2026-BBSR-RD-004513",
@@ -77,7 +97,29 @@ export default function OfficerDashboard() {
         created_at: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
         escalation_deadline: new Date(Date.now() + 2 * 3600 * 1000).toISOString()
       }
-    ]);
+    ];
+
+    // Merge with local storage
+    const localGrievances = JSON.parse(localStorage.getItem("local_grievances") || "[]");
+    const combined = [...localGrievances.filter((lg: any) => lg.department === department).map((lg: any) => ({
+      id: Math.floor(Math.random() * 100000),
+      grievance_token: lg.grievance_token,
+      department: lg.department,
+      sub_category: lg.sub_category,
+      title: lg.title,
+      description: lg.description,
+      status: lg.status,
+      priority: lg.priority,
+      created_at: lg.created_at,
+      escalation_deadline: new Date(new Date(lg.created_at).getTime() + 48 * 3600 * 1000).toISOString()
+    }))];
+
+    mock.forEach((m) => {
+      if (m.department === department && !combined.some(cg => cg.grievance_token === m.grievance_token)) {
+        combined.push(m);
+      }
+    });
+    setGrievances(combined);
   };
 
   useEffect(() => {
@@ -137,20 +179,39 @@ export default function OfficerDashboard() {
         setActiveGrievance(null);
         setReassignDept("");
       } else {
-        setGrievances(prev => prev.filter(g => g.grievance_token !== token));
-        setSuccessMsg(t("reassignment_success"));
-        setActiveGrievance(null);
-        setReassignDept("");
+        simulateReassignment(token, reassignDept);
       }
     } catch (err) {
-      setGrievances(prev => prev.filter(g => g.grievance_token !== token));
-      setSuccessMsg(t("reassignment_success"));
-      setActiveGrievance(null);
-      setReassignDept("");
+      simulateReassignment(token, reassignDept);
     }
   };
 
+  const simulateReassignment = (token: string, nextDept: string) => {
+    try {
+      const localGrievances = JSON.parse(localStorage.getItem("local_grievances") || "[]");
+      const updated = localGrievances.map((lg: any) => 
+        lg.grievance_token === token ? { ...lg, department: nextDept } : lg
+      );
+      localStorage.setItem("local_grievances", JSON.stringify(updated));
+    } catch (e) {
+      console.error(e);
+    }
+    setGrievances(prev => prev.filter(g => g.grievance_token !== token));
+    setSuccessMsg(t("reassignment_success"));
+    setActiveGrievance(null);
+    setReassignDept("");
+  };
+
   const simulateStatusChange = (token: string, newStatus: string) => {
+    try {
+      const localGrievances = JSON.parse(localStorage.getItem("local_grievances") || "[]");
+      const updated = localGrievances.map((lg: any) => 
+        lg.grievance_token === token ? { ...lg, status: newStatus } : lg
+      );
+      localStorage.setItem("local_grievances", JSON.stringify(updated));
+    } catch (e) {
+      console.error(e);
+    }
     setGrievances(prev => prev.map(g => g.grievance_token === token ? { ...g, status: newStatus } : g));
     setSuccessMsg(`${t("status_table")}: ${t(`status_${newStatus}`)}`);
     setActiveGrievance(null);

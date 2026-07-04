@@ -229,6 +229,51 @@ export default function GrievanceFormPage() {
     }
   };
 
+  const saveLocalGrievance = (token: string, backendData?: any) => {
+    try {
+      const localGrievances = JSON.parse(localStorage.getItem("local_grievances") || "[]");
+      const newGrievance = backendData ? {
+        grievance_token: backendData.grievance_token,
+        department: backendData.department,
+        sub_category: backendData.sub_category,
+        title: backendData.title,
+        description: backendData.description,
+        status: backendData.status || "submitted",
+        priority: backendData.priority || (isEmergency ? "critical" : "medium"),
+        is_emergency: backendData.is_emergency,
+        district_code: selectedDistrict ? selectedDistrict.substring(0,3).toUpperCase() : "BBS",
+        ward_number: address ? address.split(',')[0].trim().substring(0, 30) : "Ward 12",
+        created_at: backendData.created_at || new Date().toISOString(),
+        latitude: position[0],
+        longitude: position[1],
+        address: address,
+        pincode: pincode
+      } : {
+        grievance_token: token,
+        department: selectedDept,
+        sub_category: selectedSub,
+        title: title,
+        description: description,
+        status: "submitted",
+        priority: isEmergency ? "critical" : "medium",
+        is_emergency: isEmergency,
+        district_code: selectedDistrict ? selectedDistrict.substring(0,3).toUpperCase() : "BBS",
+        ward_number: address ? address.split(',')[0].trim().substring(0, 30) : "Ward 12",
+        created_at: new Date().toISOString(),
+        latitude: position[0],
+        longitude: position[1],
+        address: address,
+        pincode: pincode
+      };
+      
+      const filtered = localGrievances.filter((g: any) => g.grievance_token !== token);
+      filtered.unshift(newGrievance);
+      localStorage.setItem("local_grievances", JSON.stringify(filtered));
+    } catch (e) {
+      console.error("Failed to save local grievance", e);
+    }
+  };
+
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
@@ -261,15 +306,18 @@ export default function GrievanceFormPage() {
       if (response.ok) {
         const data = await response.json();
         setSubmittedToken(data.grievance_token);
+        saveLocalGrievance(data.grievance_token, data);
         setStep(6);
       } else {
         const generatedToken = `GR-2026-${selectedDistrict.substring(0,3).toUpperCase()}-${selectedDept.substring(0,2).toUpperCase()}-${Math.floor(100000 + Math.random() * 900000)}`;
         setSubmittedToken(generatedToken);
+        saveLocalGrievance(generatedToken);
         setStep(6);
       }
     } catch (err) {
       const generatedToken = `GR-2026-${selectedDistrict.substring(0,3).toUpperCase()}-${selectedDept.substring(0,2).toUpperCase()}-${Math.floor(100000 + Math.random() * 900000)}`;
       setSubmittedToken(generatedToken);
+      saveLocalGrievance(generatedToken);
       setStep(6);
     } finally {
       setSubmitting(false);

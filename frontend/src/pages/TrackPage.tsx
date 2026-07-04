@@ -141,14 +141,77 @@ export default function TrackPage() {
           setTimeline(timeData);
         }
       } else {
-        // Fallback mock data
-        setMockData(token);
+        // Fallback to local storage or mock
+        fetchFromLocalOrMock(token);
       }
     } catch (err) {
-      // Fallback mock data if backend not reachable
-      setMockData(token);
+      // Fallback to local storage or mock
+      fetchFromLocalOrMock(token);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchFromLocalOrMock = (token: string) => {
+    const localGrievances = JSON.parse(localStorage.getItem("local_grievances") || "[]");
+    const found = localGrievances.find((g: any) => g.grievance_token === token);
+    if (found) {
+      setGrievance({
+        grievance_token: found.grievance_token,
+        department: found.department,
+        sub_category: found.sub_category,
+        title: found.title,
+        description: found.description,
+        status: found.status,
+        priority: found.priority,
+        is_emergency: found.is_emergency,
+        district_code: found.district_code || "BBSR",
+        ward_number: found.ward_number || "Ward 12",
+        created_at: found.created_at,
+        citizen_feedback_rating: found.citizen_feedback_rating,
+      });
+
+      // Generate realistic timeline events for this local grievance
+      const events: TimelineEvent[] = [
+        {
+          id: 1,
+          old_status: null,
+          new_status: "submitted",
+          action_type: "status_change",
+          notes: i18n.language === "hi" ? "शिकायत ऑनलाइन पोर्टल के माध्यम से दर्ज की गई।" : "Grievance registered through online portal.",
+          changed_at: found.created_at,
+        }
+      ];
+
+      if (found.status !== "submitted") {
+        let statusNotes = "";
+        if (found.status === "assigned") {
+          statusNotes = i18n.language === "hi" ? "शिकायत संबंधित अधिकारी को आवंटित कर दी गई है।" : "Grievance assigned to the concern officer.";
+        } else if (found.status === "accepted") {
+          statusNotes = i18n.language === "hi" ? "अधिकारी द्वारा शिकायत स्वीकार की गई।" : "Grievance accepted by officer.";
+        } else if (found.status === "in_progress") {
+          statusNotes = i18n.language === "hi" ? "समस्या निवारण कार्य प्रगति पर है।" : "Resolution work in progress.";
+        } else if (found.status === "completed") {
+          statusNotes = i18n.language === "hi" ? "समस्या का समाधान कर दिया गया है।" : "Issue has been resolved successfully.";
+        } else if (found.status === "closed") {
+          statusNotes = i18n.language === "hi" ? "शिकायत बंद कर दी गई है।" : "Grievance has been closed.";
+        } else {
+          statusNotes = `Status updated to ${found.status}`;
+        }
+        
+        events.push({
+          id: 2,
+          old_status: "submitted",
+          new_status: found.status,
+          action_type: "status_change",
+          notes: statusNotes,
+          changed_at: new Date(new Date(found.created_at).getTime() + 10 * 60000).toISOString(),
+        });
+      }
+
+      setTimeline(events);
+    } else {
+      setMockData(token);
     }
   };
 
@@ -190,7 +253,7 @@ export default function TrackPage() {
         new_status: "assigned",
         action_type: "status_change",
         notes: i18n.language === "hi" 
-          ? "स्वचालित रूप से कनिष्ठ अभियंता (जल आपूर्ति) भुवनेश्वर को आवंटित की गई।" 
+          ? "स्वचालि‍त रूप से कनिष्ठ अभियंता (जल आपूर्ति) भुवनेश्वर को आवंटित की गई।" 
           : "Automatically assigned to Junior Engineer (Water Supply) Bhubaneswar.",
         changed_at: new Date(Date.now() - 35.8 * 3600 * 1000).toISOString(),
       },
@@ -248,10 +311,36 @@ export default function TrackPage() {
         // Refresh details
         fetchGrievance(grievance!.grievance_token);
       } else {
-        setFeedbackSuccess(true); // Mock success
+        simulateLocalFeedback();
       }
     } catch (err) {
-      setFeedbackSuccess(true); // Mock success
+      simulateLocalFeedback();
+    }
+  };
+
+  const simulateLocalFeedback = () => {
+    if (grievance) {
+      try {
+        const localGrievances = JSON.parse(localStorage.getItem("local_grievances") || "[]");
+        const updated = localGrievances.map((lg: any) => {
+          if (lg.grievance_token === grievance.grievance_token) {
+            return {
+              ...lg,
+              status: rating <= 2 ? "appealed" : lg.status,
+              citizen_feedback_rating: rating,
+              citizen_feedback_text: feedbackText
+            };
+          }
+          return lg;
+        });
+        localStorage.setItem("local_grievances", JSON.stringify(updated));
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    setFeedbackSuccess(true);
+    if (grievance) {
+      fetchGrievance(grievance.grievance_token);
     }
   };
 
@@ -356,7 +445,7 @@ export default function TrackPage() {
             </div>
 
             {/* Citizen Feedback Form (Only visible if status is completed) */}
-            {grievance.status === "completed" && !feedbackSuccess && (
+            {grievance.status === "completed" && !grievance.citizen_feedback_rating && !feedbackSuccess && (
               <div className="feedback-card mt-6">
                 <h5>{t("citizen_feedback_title")}</h5>
                 <p>{t("feedback_satisfaction_question")}</p>
@@ -395,7 +484,7 @@ export default function TrackPage() {
               </div>
             )}
 
-            {feedbackSuccess && (
+            {(feedbackSuccess || grievance.citizen_feedback_rating) && (
               <div className="feedback-success-card mt-6">
                 <ThumbsUp className="w-12 h-12 text-emerald-600 mb-2" />
                 <h5>{t("feedback_submitted_title")}</h5>

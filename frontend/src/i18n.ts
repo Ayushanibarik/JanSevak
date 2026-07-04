@@ -378,7 +378,26 @@ const enTranslation = {
   "subcat_bus_stop_damage": "Bus Stop Damage",
   "subcat_public_transport_complaint": "Public Transport Complaint",
   "subcat_parking_issue": "Parking Issue",
-  "subcat_other": "Other Issue"
+  "subcat_other": "Other Issue",
+  "gis_advanced_panel": "Advanced GIS Analysis & Data Layers",
+  "gis_base_maps": "Base Map Layer",
+  "gis_osm_standard": "OpenStreetMap Standard",
+  "gis_bhuvan_sat": "ISRO Bhuvan Satellite (WMS)",
+  "gis_bhuvan_lulc": "ISRO Bhuvan Land Use (LULC)",
+  "gis_census_layers": "Census of India 2011 Overlays",
+  "gis_census_wards": "Bhubaneswar Wards (Census)",
+  "gis_census_india": "All India States (Census)",
+  "gis_gatishakti_layers": "PM GatiShakti Infrastructure",
+  "gis_gatishakti_rail": "Railways (GatiShakti)",
+  "gis_gatishakti_road": "Highways (GatiShakti)",
+  "gis_gatishakti_pipe": "Gas Pipelines (GatiShakti)",
+  "gis_osm_pois": "OSM Points of Interest (POIs)",
+  "gis_imd_weather": "IMD Weather & Flood Forecast",
+  "gis_imd_alert_title": "IMD Weather Warning Cell",
+  "gis_choropleth_pop": "Color by Population",
+  "gis_choropleth_lit": "Color by Literacy Rate",
+  "gis_choropleth_none": "Standard Borders",
+  "gis_legend": "Demographics Legend"
 };
 
 i18n
