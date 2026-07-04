@@ -14,3 +14,7 @@ ai_models/runs/
 ai_models/*.pt
 .agents/
 .DS_Store
+backend/app/models/*.ftz
+backend/app/models/*.pt
+backend/app/gis_data/india_states_census.json
+
