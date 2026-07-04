@@ -157,6 +157,58 @@ export default function GrievanceFormPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
+  // Speech Recognition States and Logic
+  const [isListening, setIsListening] = useState(false);
+  const [speechError, setSpeechError] = useState("");
+  const recognitionRef = useRef<any>(null);
+
+  useEffect(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const rec = new SpeechRecognition();
+      rec.continuous = true;
+      rec.interimResults = false;
+      
+      rec.onstart = () => {
+        setIsListening(true);
+        setSpeechError("");
+      };
+      
+      rec.onresult = (event: any) => {
+        const transcript = event.results[event.results.length - 1][0].transcript;
+        setDescription((prev) => prev ? `${prev} ${transcript}` : transcript);
+      };
+      
+      rec.onerror = (event: any) => {
+        console.error("Speech recognition error:", event.error);
+        if (event.error !== "no-speech") {
+          setSpeechError(event.error);
+          setIsListening(false);
+        }
+      };
+      
+      rec.onend = () => {
+        setIsListening(false);
+      };
+      
+      recognitionRef.current = rec;
+    }
+  }, []);
+
+  const toggleListening = () => {
+    if (!recognitionRef.current) {
+      alert(i18n.language === "hi" ? "आपका ब्राउज़र वॉयस इनपुट का समर्थन नहीं करता है।" : "Your browser does not support voice input.");
+      return;
+    }
+    
+    if (isListening) {
+      recognitionRef.current.stop();
+    } else {
+      recognitionRef.current.lang = i18n.language === "hi" ? "hi-IN" : i18n.language === "kn" ? "kn-IN" : "en-IN";
+      recognitionRef.current.start();
+    }
+  };
+
   // Instantly center on selected state
   useEffect(() => {
     if (selectedState) {
@@ -557,13 +609,84 @@ export default function GrievanceFormPage() {
 
             <div className="form-group">
               <label>{t("detailed_description_label")}</label>
-              <textarea
-                placeholder={t("detailed_description_placeholder")}
-                rows={5}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                required
-              ></textarea>
+              <div style={{ position: "relative" }}>
+                <textarea
+                  placeholder={t("detailed_description_placeholder")}
+                  rows={5}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  required
+                  style={{ paddingRight: "50px", width: "100%" }}
+                ></textarea>
+                <button
+                  type="button"
+                  onClick={toggleListening}
+                  className={`voice-input-btn ${isListening ? "listening" : ""}`}
+                  style={{
+                    position: "absolute",
+                    right: "12px",
+                    bottom: "12px",
+                    background: isListening ? "#ef4444" : "#2563eb",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "50%",
+                    width: "36px",
+                    height: "36px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                    transition: "all 0.3s ease",
+                    zIndex: 10
+                  }}
+                  title={isListening ? "Listening... Click to stop" : "Speak to type"}
+                >
+                  <Mic size={18} />
+                </button>
+              </div>
+              
+              <style>{`
+                @keyframes pulse-mic {
+                  0% {
+                    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+                  }
+                  70% {
+                    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+                  }
+                  100% {
+                    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+                  }
+                }
+                .voice-input-btn.listening {
+                  animation: pulse-mic 1.5s infinite !important;
+                }
+                @keyframes pulse-dot {
+                  0% { opacity: 0.4; }
+                  50% { opacity: 1; }
+                  100% { opacity: 0.4; }
+                }
+                .pulsing-dot {
+                  animation: pulse-dot 1s infinite;
+                  width: 8px;
+                  height: 8px;
+                  border-radius: 50%;
+                  background-color: #ef4444;
+                  display: inline-block;
+                }
+              `}</style>
+
+              {isListening && (
+                <div style={{ fontSize: "13px", color: "#ef4444", marginTop: "6px", display: "flex", alignItems: "center", gap: "6px", fontWeight: "600" }}>
+                  <span className="pulsing-dot"></span>
+                  {i18n.language === "hi" ? "सुन रहा है... बोलना शुरू करें" : i18n.language === "kn" ? "ಕೇಳಿಸಿಕೊಳ್ಳುತ್ತಿದೆ... ಮಾತನಾಡಲು ಪ್ರಾರಂಭಿಸಿ" : "Listening... Start speaking"}
+                </div>
+              )}
+              {speechError && (
+                <div style={{ fontSize: "12px", color: "#e11d48", marginTop: "4px" }}>
+                  Error: {speechError}. Please try again.
+                </div>
+              )}
             </div>
 
             {/* Media Upload */}
