@@ -616,7 +616,7 @@ export default function GrievanceFormPage() {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   required
-                  style={{ paddingRight: "50px", width: "100%" }}
+                  style={{ paddingRight: "50px", width: "100%", boxSizing: "border-box" }}
                 ></textarea>
                 <button
                   type="button"
