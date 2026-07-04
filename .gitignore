@@ -1,0 +1,16 @@
+node_modules/
+dist/
+venv/
+.venv/
+__pycache__/
+*.pyc
+.env
+vite-dev.err.log
+vite-dev.out.log
+translate_lines_out.txt
+translate_out.txt
+ai_models/datasets/
+ai_models/runs/
+ai_models/*.pt
+.agents/
+.DS_Store

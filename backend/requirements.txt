@@ -1,0 +1,16 @@
+fastapi[standard]
+sqlalchemy
+psycopg2-binary
+alembic
+geoalchemy2
+pydantic-settings
+pgvector
+python-jose[cryptography]
+passlib[bcrypt]
+boto3
+python-multipart
+sentence-transformers
+ultralytics
+openai-whisper
+
+
