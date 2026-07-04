@@ -66,29 +66,56 @@ async def create_grievance(
         image_url = f"/uploads/{fname}"
 
     # ── AI Auto-Classification & Analysis ──
-    combined_text = f"{title} {description}"
-    ai_result = await classify_grievance_text(combined_text)
+    from app.core.ocr import perform_ocr
+    from app.core.translation import detect_language, translate_to_english
+    from app.core.spam_detection import is_spam, cross_check_gps_with_text
+    from app.core.ner_sentiment import get_ner_entities, get_sentiment
+    from app.core.vision import analyze_civic_image
     
-    # YOLO image check
-    ai_img_category = None
-    ai_img_conf = 0.0
+    # 1. OCR (If image is provided and description is short)
+    if filepath and len(description) < 20:
+        ocr_text = perform_ocr(filepath)
+        if ocr_text:
+            description += f" [Extracted from image: {ocr_text}]"
+            
+    combined_text = f"{title} {description}"
+    
+    # 2. Spam Detection
+    if is_spam(combined_text):
+        raise HTTPException(400, "Submission flagged as spam.")
+        
+    # 3. Translation
+    src_lang = detect_language(combined_text)
+    english_text = translate_to_english(combined_text, src_lang)
+    
+    # 4. Topic Classification (DistilBERT)
+    ai_result = await classify_grievance_text(english_text)
+    
+    # 5. NER & Sentiment
+    entities = get_ner_entities(english_text)
+    sentiment_scores = get_sentiment(english_text)
+    
+    # 6. GPS Cross-Check
+    if latitude and longitude and not cross_check_gps_with_text((latitude, longitude), entities['locations']):
+        # If it fails, maybe we just flag it instead of rejecting
+        print(f"Warning: GPS mismatch for {title}")
+        
+    # 7. Vision (YOLOv8 + UNet)
     if filepath:
-        ai_img_category, ai_img_conf = run_image_yolo_inference(filepath)
-        # Override department if YOLO is highly confident about visual issue
-        if ai_img_category and ai_img_conf > 0.7:
-            if "pothole" in ai_img_category:
-                department = Department.ROADS
-                sub_category = "potholes"
-            elif "garbage" in ai_img_category or "waste" in ai_img_category:
-                department = Department.SANITATION
-                sub_category = "garbage_not_collected"
-
-    # Merge emergency indicators
-    final_is_emergency = is_emergency or ai_result.get("is_emergency", False)
+        vision_results = analyze_civic_image(filepath)
+        if vision_results["potholes"] > 0:
+            department = Department.ROADS
+            sub_category = "potholes"
+        elif vision_results["garbage_piles"] > 0:
+            department = Department.SANITATION
+            sub_category = "garbage_not_collected"
+            
+    # Merge emergency indicators from text, sentiment, and vision
+    final_is_emergency = is_emergency or ai_result.get("is_emergency", False) or sentiment_scores["is_urgent"]
     priority = Priority.CRITICAL if final_is_emergency else Priority.MEDIUM
 
     # SBERT Embedding for semantic search and duplicate detection
-    embeddings = get_sbert_embeddings(combined_text)
+    embeddings = get_sbert_embeddings(english_text)
     
     # Check for duplicate complaint using cosine similarity (threshold 0.85)
     is_duplicate_of = None

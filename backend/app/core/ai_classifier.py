@@ -1,3 +1,4 @@
+
 import httpx
 import json
 import logging
@@ -25,53 +26,40 @@ def get_sbert_embeddings(text: str) -> Optional[list]:
         logger.error(f"SBERT Embedding generation failed: {e}")
         return None
 
+_distilbert_pipeline = None
+
 async def classify_grievance_text(text: str) -> Dict[str, Any]:
     """
-    Uses Llama 3 via local Ollama to classify text (Hindi/English) into department, subcategory, 
-    priority and check if it is emergency.
+    Uses a DistilBERT zero-shot classifier to categorize the complaint.
     """
-    prompt = f"""
-    You are an AI officer for JanMitra, the national grievance portal of India.
-    Analyze the following grievance text (which could be in Hindi, English, or Odia) and classify it.
-    
-    You must return ONLY a JSON object with these exact keys:
-    - department: One of ["water_supply", "electricity", "roads", "drainage", "sanitation", "environment", "public_safety", "government_services", "disaster", "healthcare", "education", "transport", "other"]
-    - sub_category: Specify a keyword for the problem (e.g. "potholes", "no_water_supply", "power_outage")
-    - priority: One of ["low", "medium", "high", "critical"]
-    - is_emergency: boolean (true if there is immediate physical danger to life or infrastructure, e.g. fires, floods, hanging live wires)
-    - summary: A 1-sentence summary of the problem in English.
-    
-    Grievance Text: {text}
-    
-    JSON Output:
-    """
-    
+    global _distilbert_pipeline
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                OLLAMA_URL,
-                json={
-                    "model": MODEL_NAME,
-                    "prompt": prompt,
-                    "stream": False,
-                    "format": "json"
-                },
-                timeout=15.0
-            )
-            if response.status_code == 200:
-                result_json = response.json().get("response", "{}")
-                data = json.loads(result_json)
-                return {
-                    "department": data.get("department", "other"),
-                    "sub_category": data.get("sub_category", "other"),
-                    "priority": data.get("priority", "medium"),
-                    "is_emergency": data.get("is_emergency", False),
-                    "summary": data.get("summary", "Civic issue submitted by citizen")
-                }
-    except Exception as e:
-        logger.error(f"Llama 3 classification failed: {e}")
+        if _distilbert_pipeline is None:
+            from transformers import pipeline
+            _distilbert_pipeline = pipeline("zero-shot-classification", model="valhalla/distilbart-mnli-12-1")
+            
+        candidate_labels = ["water supply", "electricity", "roads", "drainage", "sanitation", "environment", "public safety", "government services", "healthcare", "education", "transport"]
         
-    # Fallback to rule-based classification if Ollama is not running/fails
+        # We only use a small chunk of text for speed
+        result = _distilbert_pipeline(text[:512], candidate_labels)
+        
+        department = result['labels'][0].replace(' ', '_')
+        
+        # Simple heuristic for emergency
+        is_emergency = "emergency" in text.lower() or "fire" in text.lower() or "blood" in text.lower()
+        priority = "high" if is_emergency else "medium"
+        
+        return {
+            "department": department,
+            "sub_category": "general",
+            "priority": priority,
+            "is_emergency": is_emergency,
+            "summary": text[:50] + "..."
+        }
+    except Exception as e:
+        logger.error(f"DistilBERT classification failed: {e}")
+        
+    # Fallback to rule-based classification if model is not running/fails
     return fallback_rule_based_classifier(text)
 
 def fallback_rule_based_classifier(text: str) -> Dict[str, Any]:

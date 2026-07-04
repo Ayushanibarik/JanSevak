@@ -1,28 +1,45 @@
-from sentence_transformers import SentenceTransformer
-import numpy as np
+import logging
+import imagehash
+from PIL import Image
+from typing import List, Tuple
+import os
 
-class SimilarityEngine:
-    def __init__(self, model_name: str = 'all-MiniLM-L6-v2'):
-        """
-        Initializes the local SBERT model for complaint duplicate detection.
-        Using a small, fast model to run completely locally without API keys.
-        Produces 384-dimensional embeddings (matching our pgvector setup).
-        """
-        try:
-            self.model = SentenceTransformer(model_name)
-        except Exception as e:
-            print(f"Warning: Could not load SentenceTransformer {model_name}. Error: {e}")
-            self.model = None
+logger = logging.getLogger(__name__)
 
-    def get_embedding(self, text: str) -> list[float]:
-        """
-        Converts a text string (complaint description + title) into a vector.
-        """
-        if not self.model:
-            # Fallback random vector if model failed to load (for testing)
-            return np.random.rand(384).tolist()
-            
-        embedding = self.model.encode(text)
-        return embedding.tolist()
+def check_text_duplicate(embedding1: List[float], embedding2: List[float], threshold: float = 0.85) -> bool:
+    """
+    Uses cosine similarity between SBERT embeddings to detect duplicates.
+    """
+    if not embedding1 or not embedding2:
+        return False
         
-similarity_engine = SimilarityEngine()
+    try:
+        import numpy as np
+        vec1 = np.array(embedding1)
+        vec2 = np.array(embedding2)
+        
+        # Calculate cosine similarity
+        sim = np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
+        return float(sim) >= threshold
+    except Exception as e:
+        logger.error(f"SBERT similarity check failed: {e}")
+        return False
+
+def check_image_duplicate(img_path1: str, img_path2: str, threshold: int = 5) -> bool:
+    """
+    Uses Perceptual Hashing (pHash) to detect identical or near-identical images.
+    Threshold is the Hamming distance (lower means more similar, 0 is identical).
+    """
+    if not os.path.exists(img_path1) or not os.path.exists(img_path2):
+        return False
+        
+    try:
+        hash1 = imagehash.phash(Image.open(img_path1))
+        hash2 = imagehash.phash(Image.open(img_path2))
+        
+        # Calculate hamming distance
+        distance = hash1 - hash2
+        return distance <= threshold
+    except Exception as e:
+        logger.error(f"pHash image similarity check failed: {e}")
+        return False

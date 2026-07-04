@@ -12,5 +12,12 @@ python-multipart
 sentence-transformers
 ultralytics
 openai-whisper
-
-
+pytesseract
+Pillow
+transformers
+torch
+fasttext-wheel
+spacy
+imagehash
+geopy
+sentencepiece

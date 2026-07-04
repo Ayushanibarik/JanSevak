@@ -39,3 +39,39 @@ async def generate_civic_entities(text: str) -> Optional[Dict[str, Any]]:
     except Exception as e:
         print(f"Ollama Llama 3 Error: {e}")
         return None
+
+async def ask_rag_assistant(question: str, db_context_docs: list) -> Optional[str]:
+    """
+    RAG Implementation: Takes an official's natural language query and 
+    database records (context), and summarizes the answer using Llama 3.
+    """
+    context_str = "\n".join([str(doc) for doc in db_context_docs])
+    prompt = f"""
+    You are an AI assistant for government officials. Answer their question based ONLY on the following database records.
+    
+    Database Records:
+    {context_str}
+    
+    Official's Question: {question}
+    
+    Answer clearly and concisely:
+    """
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                OLLAMA_URL,
+                json={
+                    "model": MODEL_NAME,
+                    "prompt": prompt,
+                    "stream": False
+                },
+                timeout=45.0
+            )
+            if response.status_code == 200:
+                data = response.json()
+                return data.get("response", "").strip()
+            return "Failed to get response from AI."
+    except Exception as e:
+        print(f"RAG Llama 3 Error: {e}")
+        return "AI Assistant is currently unavailable."
