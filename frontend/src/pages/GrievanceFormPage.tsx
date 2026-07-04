@@ -250,7 +250,7 @@ export default function GrievanceFormPage() {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || \'http://localhost:8001\'}/grievances/`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001'}/grievances/`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${localStorage.getItem("token") || ""}`
