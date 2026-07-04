@@ -1,16 +1,3 @@
-# JanMitra AI Dashboard
-
-This repository now contains a working frontend MVP for the JanMitra AI system design described in `JanMitra_AI_System_Design.pdf`.
-
-## Run It
-
-```bash
-npm install
-npm run dev
-```
-
-The Vite app serves on `http://127.0.0.1:5173/`.
-
 ## What Is Implemented
 
 - MP/admin dashboard for complaints, project prioritization, and GIS analysis
@@ -19,7 +6,7 @@ The Vite app serves on `http://127.0.0.1:5173/`.
 - Architecture and security views mapped to the PDF sections
 - Animated UI patterns inspired by Vengeance UI components such as bento grids, glow cards, animated numbers, and spotlight navigation
 
-# Detailed Section-by-Section Explanation of the JanMitra AI Proposal
+# Detailed Section-by-Section Explanation of the JanSevak AI Proposal
 
 This document provides an exhaustive, section-by-section explanation of the JanMitra AI system design proposal, detailing every technical concept, architecture flow, model choice, database design, and implementation step outlined in the source document.
 
@@ -86,7 +73,7 @@ This document provides an exhaustive, section-by-section explanation of the JanM
 
 ### Mission & Vision
 * **Mission:** Empower Indian MPs and citizens with an AI-driven platform that crowdsources, analyzes, and translates constituency development inputs to identify and prioritize projects based on real data.
-* **Vision:** A "Jan Mitra" (People's Friend) system bridging the gap between grassroots needs and government execution, ensuring every citizen's voice is heard.
+* **Vision:** A "Jan Sevak" system bridging the gap between grassroots needs and government execution, ensuring every citizen's voice is heard.
 
 ### Objectives
 1. **Engage Citizens:** Frictionless reporting across multiple channels.
@@ -433,17 +420,7 @@ Recommends books and reference repositories to help the development team upskill
 
 ---
 
-## 🏆 Section 20: SIH Winning Strategy
-
-Strategic advice for presenting the prototype to Smart India Hackathon (SIH) judges:
-
-* **What Judges Look For:** Working execution over conceptual slides, feasibility, and impact.
-* **Common Pitfalls to Avoid:** Vague project scopes, missing implementation plans, dummy data, and un-optimized code.
-* **How to Stand Out:** Highlight features competitors rarely implement: offline support, WhatsApp integration, live voice transcripts, dynamic GIS analysis, and real public census datasets.
-
----
-
-## 🚀 Section 21: Future Scope
+## 🚀 Section 20: Future Scope
 
 Details the vision for scaling JanMitra beyond a basic complaint portal:
 * **Digital Twin:** Integrating 3D graphics (Unity/Cesium) to simulate the physical impact of new construction projects on traffic and the environment.
@@ -452,34 +429,3 @@ Details the vision for scaling JanMitra beyond a basic complaint portal:
 * **Predictive Governance:** Analyzing long-term trends to predict citizen needs, potential infrastructure failures, or civic unrest.
 
 ---
-
-## 💰 Section 22: Complete Cost Analysis
-
-Provides estimates for a small-scale pilot deployment in Indian Rupees (INR):
-* **Development (Team of 6 for 3 months):** ~₹30 Lakhs.
-* **Hardware & GPUs (One-time):** ~₹5 Lakhs.
-* **AWS Cloud Infrastructure (Monthly):** ~₹2 Lakhs.
-  * EC2/ECS: ₹1 Lakh.
-  * RDS PostgreSQL: ₹50k.
-  * Storage and Bandwidth: ~₹50k.
-* **AI/ML Costs:** Running open-source models (Whisper/NLLB) on AWS GPU servers reduces costs to zero compared to paying per-call for proprietary commercial APIs.
-* **Total Estimated First-Year Cost:** ~₹60 Lakhs (approx. USD $75,000) for a national-scale pilot rollout.
-
----
-
-## 📝 Section 23: Final Implementation Checklist
-
-A step-by-step development sequence:
-* **Week 1:** Authentication, database tables, and Basic REST API.
-* **Week 2:** NLP pipelines (Whisper Speech-to-Text and OCR).
-* **Week 3:** GIS database setup (importing shapefiles into PostGIS).
-* **Week 4:** SBERT duplicate detection and vector DB setup.
-* **Week 5:** Multilingual translation using NLLB-200.
-* **Week 6:** MP Dashboard UI and AWS SNS notifications.
-* **Week 7:** priority scoring engine integration.
-* **Week 8:** End-to-end integration testing and offline caching.
-* **Week 9:** UI polishing and preparation of the demonstration presentation.
-* **Day of Demo:** Deployment checks and dry-run execution scripts.
-
----
-*This README serves as the complete technical blueprint for JanMitra AI.*
