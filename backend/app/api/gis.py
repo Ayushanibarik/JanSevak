@@ -455,3 +455,133 @@ def get_india_census_data():
         return geojson_data
     except Exception as e:
         return get_fallback_india_geojson()
+
+
+@router.get("/cpgrams")
+def get_cpgrams_grievances():
+    """
+    Returns real-time simulated synced grievances from CPGRAMS (Centralized Public Grievance 
+    Redress and Monitoring System) and other state portals (e-Abhijog, etc.) across India.
+    """
+    return [
+        {
+            "id": "PMO/E/2026/0010245",
+            "title": "PM-Kisan Yojana subsidy installment not credited",
+            "source": "CPGRAMS - PMO",
+            "state": "Uttar Pradesh",
+            "latitude": 27.1750,
+            "longitude": 78.0422,
+            "department": "Agriculture & Farmers Welfare",
+            "priority": "high",
+            "status": "submitted",
+            "date_filed": "2026-07-02"
+        },
+        {
+            "id": "MINWR/E/2026/0008412",
+            "title": "Irrigation canal water clogging causing crop damage",
+            "source": "CPGRAMS - Water Resources",
+            "state": "Odisha",
+            "latitude": 20.9517,
+            "longitude": 85.0985,
+            "department": "Water Resources",
+            "priority": "medium",
+            "status": "assigned",
+            "date_filed": "2026-07-01"
+        },
+        {
+            "id": "MORTH/E/2026/0023190",
+            "title": "Severe potholes on NH-16 stretch near Cuttack",
+            "source": "CPGRAMS - Road Transport & Highways",
+            "state": "Odisha",
+            "latitude": 20.4625,
+            "longitude": 85.8828,
+            "department": "Roads & Highways",
+            "priority": "critical",
+            "status": "in_progress",
+            "date_filed": "2026-07-03"
+        },
+        {
+            "id": "POSTS/E/2026/0005423",
+            "title": "Speed Post packet containing certificates missing",
+            "source": "CPGRAMS - Department of Posts",
+            "state": "Delhi",
+            "latitude": 28.6139,
+            "longitude": 77.2090,
+            "department": "Communications",
+            "priority": "high",
+            "status": "accepted",
+            "date_filed": "2026-07-04"
+        },
+        {
+            "id": "RAILW/E/2026/0034981",
+            "title": "Unsanitary coaches and no water in sleeper class of Konark Express",
+            "source": "CPGRAMS - Ministry of Railways",
+            "state": "Maharashtra",
+            "latitude": 19.0760,
+            "longitude": 72.8777,
+            "department": "Railways",
+            "priority": "high",
+            "status": "assigned",
+            "date_filed": "2026-07-03"
+        },
+        {
+            "id": "MINLAB/E/2026/0009142",
+            "title": "EPFO withdrawal request pending for more than 45 days",
+            "source": "CPGRAMS - Labour & Employment",
+            "state": "Karnataka",
+            "latitude": 12.9716,
+            "longitude": 77.5946,
+            "department": "Labour & Employment",
+            "priority": "medium",
+            "status": "submitted",
+            "date_filed": "2026-07-02"
+        },
+        {
+            "id": "DEABD/E/2026/0014280",
+            "title": "Bank agent harassment for education loan repayment extension",
+            "source": "CPGRAMS - Financial Services",
+            "state": "Kerala",
+            "latitude": 10.8505,
+            "longitude": 76.2711,
+            "department": "Finance",
+            "priority": "high",
+            "status": "in_progress",
+            "date_filed": "2026-07-04"
+        },
+        {
+            "id": "UIDAI/E/2026/0004921",
+            "title": "Aadhaar update rejected multiple times despite valid documents",
+            "source": "CPGRAMS - UIDAI",
+            "state": "Rajasthan",
+            "latitude": 26.9124,
+            "longitude": 75.7873,
+            "department": "Electronics & IT",
+            "priority": "low",
+            "status": "accepted",
+            "date_filed": "2026-07-04"
+        },
+        {
+            "id": "ODISHA/E/2026/0002102",
+            "title": "Piped drinking water disconnected in Ward 3 of Sambalpur",
+            "source": "e-Abhijog Odisha Portal",
+            "state": "Odisha",
+            "latitude": 21.4669,
+            "longitude": 83.9812,
+            "department": "Water Supply",
+            "priority": "high",
+            "status": "submitted",
+            "date_filed": "2026-07-03"
+        },
+        {
+            "id": "MOPNG/E/2026/0007823",
+            "title": "Indane gas cylinder refill delay exceeding 12 days",
+            "source": "CPGRAMS - Petroleum & Natural Gas",
+            "state": "West Bengal",
+            "latitude": 22.5726,
+            "longitude": 88.3639,
+            "department": "Petroleum & Gas",
+            "priority": "medium",
+            "status": "in_progress",
+            "date_filed": "2026-07-04"
+        }
+    ]

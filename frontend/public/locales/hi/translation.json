@@ -394,5 +394,8 @@
   "gis_choropleth_pop": "जनसंख्या के अनुसार रंग",
   "gis_choropleth_lit": "साक्षरता दर के अनुसार रंग",
   "gis_choropleth_none": "मानक सीमाएं",
-  "gis_legend": "जनसांख्यिकी कथा"
+  "gis_legend": "जनसांख्यिकी कथा",
+  "gis_current_location": "मेरा स्थान दिखाएं",
+  "gis_sync_cpgrams": "सीपीजीआरएएमएस सिंक (राष्ट्रीय)",
+  "gis_syncing_location": "खोज रहा है..."
 }

@@ -397,7 +397,10 @@ const enTranslation = {
   "gis_choropleth_pop": "Color by Population",
   "gis_choropleth_lit": "Color by Literacy Rate",
   "gis_choropleth_none": "Standard Borders",
-  "gis_legend": "Demographics Legend"
+  "gis_legend": "Demographics Legend",
+  "gis_current_location": "Show My Location",
+  "gis_sync_cpgrams": "Sync CPGRAMS (National)",
+  "gis_syncing_location": "Locating..."
 };
 
 i18n

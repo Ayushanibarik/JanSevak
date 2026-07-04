@@ -49,12 +49,17 @@ export default function HeatmapPage() {
   const [gatiShaktiPipe, setGatiShaktiPipe] = useState(false);
   const [osmPois, setOsmPois] = useState(false);
   const [imdWeather, setImdWeather] = useState(false);
+  const [syncCpgrams, setSyncCpgrams] = useState(false);
 
   const [censusWardsGeoJSON, setCensusWardsGeoJSON] = useState<any>(null);
   const [censusIndiaGeoJSON, setCensusIndiaGeoJSON] = useState<any>(null);
   const [gatiShaktiGeoJSON, setGatiShaktiGeoJSON] = useState<any>(null);
   const [imdForecastData, setImdForecastData] = useState<any>(null);
   const [osmPoiMarkers, setOsmPoiMarkers] = useState<any[]>([]);
+  const [cpgramsGrievances, setCpgramsGrievances] = useState<any[]>([]);
+
+  const [myLocation, setMyLocation] = useState<[number, number] | null>(null);
+  const [locating, setLocating] = useState(false);
 
   const [mapCenter, setMapCenter] = useState<[number, number]>([20.2961, 85.8245]);
   const [mapZoom, setMapZoom] = useState<number>(13);
@@ -217,6 +222,50 @@ export default function HeatmapPage() {
       loadIMD();
     }
   }, [imdWeather, imdForecastData]);
+
+  // Load CPGRAMS synced grievances
+  useEffect(() => {
+    if (syncCpgrams && cpgramsGrievances.length === 0) {
+      const loadCpgrams = async () => {
+        try {
+          const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001'}/gis/cpgrams`);
+          if (response.ok) {
+            const data = await response.json();
+            setCpgramsGrievances(data);
+          }
+        } catch (err) {
+          console.error("Failed to load CPGRAMS synced data", err);
+        }
+      };
+      loadCpgrams();
+    }
+  }, [syncCpgrams, cpgramsGrievances]);
+
+  // Geolocation Handler
+  const handleShowMyLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser");
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        setMyLocation([lat, lon]);
+        setMapCenter([lat, lon]);
+        setMapZoom(15);
+        setLocating(false);
+      },
+      (error) => {
+        console.error("Error getting user location", error);
+        alert(i18n.language === "hi" ? "स्थान प्राप्त करने में विफल। कृपया जीपीएस जांचें।" : "Failed to retrieve location. Please check your GPS/permissions.");
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  };
+
 
   // Load OSM POIs when checked
   useEffect(() => {
@@ -669,6 +718,35 @@ export default function HeatmapPage() {
               <h5>{t("gis_advanced_panel")}</h5>
             </div>
 
+            {/* Geolocation Button */}
+            <button 
+              type="button" 
+              onClick={handleShowMyLocation} 
+              disabled={locating}
+              className="map-refresh-btn"
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", background: "#4338ca", color: "#fff", padding: "10px", borderRadius: "6px", border: "none", fontWeight: "bold", cursor: "pointer", transition: "background 0.2s" }}
+              onMouseOver={(e) => e.currentTarget.style.background = "#312e81"}
+              onMouseOut={(e) => e.currentTarget.style.background = "#4338ca"}
+            >
+              <MapPin className="w-4 h-4 mr-2" />
+              {locating ? t("gis_syncing_location") : t("gis_current_location")}
+            </button>
+
+            {/* Sync National Portals Checkbox */}
+            <div className="filter-checkbox-item" style={{ borderBottom: "1px solid #e2e8f0", paddingBottom: "12px" }}>
+              <input
+                type="checkbox"
+                id="syncCpgramsCheckbox"
+                checked={syncCpgrams}
+                onChange={(e) => setSyncCpgrams(e.target.checked)}
+              />
+              <label htmlFor="syncCpgramsCheckbox" style={{ display: "flex", alignItems: "center", gap: "6px", fontWeight: "bold", fontSize: "13px", cursor: "pointer" }}>
+                <Activity className="w-4 h-4 text-indigo-600" />
+                {t("gis_sync_cpgrams")}
+              </label>
+            </div>
+
+
             {/* Base Map Selection */}
             <div className="filter-group">
               <label className="font-bold text-gray-700 block mb-1 text-sm">{t("gis_base_maps")}</label>
@@ -952,6 +1030,62 @@ export default function HeatmapPage() {
                   <a href={`/grievance/track?token=${c.id}`} className="popup-link">
                     {t("view_details_link")} &rarr;
                   </a>
+                </div>
+              </Popup>
+            </CircleMarker>
+          ))}
+
+          {/* Current Location Marker */}
+          {myLocation && (
+            <CircleMarker
+              center={myLocation}
+              pathOptions={{
+                color: "#ffffff",
+                fillColor: "#3b82f6",
+                fillOpacity: 0.9,
+                weight: 3
+              }}
+              radius={10}
+            >
+              <Popup>
+                <div style={{ fontFamily: "sans-serif", padding: "4px", fontWeight: "bold", color: "#1e3a8a" }}>
+                  📍 {i18n.language === "hi" ? "आप यहाँ हैं" : "You are here"}
+                </div>
+              </Popup>
+            </CircleMarker>
+          )}
+
+          {/* CPGRAMS synced national grievances */}
+          {syncCpgrams && cpgramsGrievances.map((g) => (
+            <CircleMarker
+              key={g.id}
+              center={[g.latitude, g.longitude]}
+              pathOptions={{
+                color: "#4f46e5",
+                fillColor: getPriorityColor(g.priority),
+                fillOpacity: 0.7,
+                weight: 2
+              }}
+              radius={g.priority === "critical" ? 16 : 10}
+            >
+              <Popup>
+                <div style={{ fontFamily: "sans-serif", padding: "4px", minWidth: "160px" }}>
+                  <span style={{ fontSize: "10px", fontWeight: "bold", color: "#4f46e5", textTransform: "uppercase" }}>
+                    {g.source}
+                  </span>
+                  <h6 style={{ margin: "4px 0 2px 0", color: "#374151", fontSize: "11px" }}>Token: {g.id}</h6>
+                  <h5 style={{ margin: "2px 0 6px 0", fontSize: "13px", fontWeight: "bold", color: "#111827" }}>{g.title}</h5>
+                  <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "4px" }}>
+                    <span style={{ fontSize: "10px", background: "#e0e7ff", color: "#4338ca", padding: "2px 6px", borderRadius: "4px", fontWeight: "bold" }}>
+                      {g.department}
+                    </span>
+                    <span style={{ fontSize: "10px", background: "#fef3c7", color: "#d97706", padding: "2px 6px", borderRadius: "4px", fontWeight: "bold" }}>
+                      {g.status.toUpperCase()}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: "10px", color: "#6b7280", marginTop: "4px" }}>
+                    State: {g.state} | Filed: {g.date_filed}
+                  </div>
                 </div>
               </Popup>
             </CircleMarker>
