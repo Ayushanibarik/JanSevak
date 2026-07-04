@@ -1,3 +1,12 @@
+---
+title: JanMitra AI Backend
+emoji: 🏙️
+colorFrom: blue
+colorTo: green
+sdk: docker
+pinned: false
+---
+
 ## What Is Implemented
 
 - MP/admin dashboard for complaints, project prioritization, and GIS analysis
