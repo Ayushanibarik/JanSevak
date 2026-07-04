@@ -43,7 +43,7 @@ export default function HeatmapPage() {
   const fetchMapData = async () => {
     setLoading(true);
     try {
-      let url = "http://localhost:8001/gis/heatmap";
+      let url = `${import.meta.env.VITE_API_URL || \'http://localhost:8001\'}/gis/heatmap`;
       const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();

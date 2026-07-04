@@ -129,13 +129,13 @@ export default function TrackPage() {
     setTimeline([]);
 
     try {
-      const response = await fetch(`http://localhost:8001/grievances/${token}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL || \'http://localhost:8001\'}/grievances/${token}`);
       if (response.ok) {
         const data = await response.json();
         setGrievance(data);
         
         // Fetch timeline
-        const timeResponse = await fetch(`http://localhost:8001/grievances/${token}/timeline`);
+        const timeResponse = await fetch(`${import.meta.env.VITE_API_URL || \'http://localhost:8001\'}/grievances/${token}/timeline`);
         if (timeResponse.ok) {
           const timeData = await timeResponse.json();
           setTimeline(timeData);
@@ -237,7 +237,7 @@ export default function TrackPage() {
     if (rating === 0) return;
 
     try {
-      const response = await fetch(`http://localhost:8001/grievances/${grievance?.grievance_token}/feedback`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || \'http://localhost:8001\'}/grievances/${grievance?.grievance_token}/feedback`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rating, feedback_text: feedbackText })

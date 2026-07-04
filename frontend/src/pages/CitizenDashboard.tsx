@@ -26,7 +26,7 @@ export default function CitizenDashboard() {
   const fetchCitizenData = async () => {
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:8001/grievances/");
+      const response = await fetch(`${import.meta.env.VITE_API_URL || \'http://localhost:8001\'}/grievances/`);
       if (response.ok) {
         const data = await response.json();
         setGrievances(data);

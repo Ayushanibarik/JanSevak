@@ -33,7 +33,7 @@ export default function OfficerDashboard() {
   const fetchAssignedData = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:8001/grievances/?department=${department}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL || \'http://localhost:8001\'}/grievances/?department=${department}`);
       if (response.ok) {
         const data = await response.json();
         setGrievances(data);
@@ -86,7 +86,7 @@ export default function OfficerDashboard() {
 
   const handleAccept = async (token: string) => {
     try {
-      const response = await fetch(`http://localhost:8001/grievances/${token}/status`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || \'http://localhost:8001\'}/grievances/${token}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ new_status: "accepted", notes: "Grievance accepted by officer, investigation/team dispatched." })
@@ -105,7 +105,7 @@ export default function OfficerDashboard() {
 
   const handleResolve = async (token: string) => {
     try {
-      const response = await fetch(`http://localhost:8001/grievances/${token}/status`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || \'http://localhost:8001\'}/grievances/${token}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ new_status: "completed", notes: `Resolved: ${resolutionNotes}` })
@@ -126,7 +126,7 @@ export default function OfficerDashboard() {
   const handleReassign = async (token: string) => {
     if (!reassignDept) return;
     try {
-      const response = await fetch(`http://localhost:8001/grievances/${token}/reassign`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || \'http://localhost:8001\'}/grievances/${token}/reassign`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ new_department: reassignDept, reason: "Reassigned by department officer due to jurisdiction." })
