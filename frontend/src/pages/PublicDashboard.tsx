@@ -10,43 +10,24 @@ export default function PublicDashboard() {
   const { t } = useTranslation();
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchPublicStats = async () => {
     setLoading(true);
+    setError(null);
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001'}/dashboard/public`);
       if (response.ok) {
         const data = await response.json();
         setStats(data);
       } else {
-        setMockPublicData();
+        setError("Failed to retrieve real-time transparency metrics.");
       }
     } catch (err) {
-      setMockPublicData();
+      setError("Unable to connect to the unified grievance server.");
     } finally {
       setLoading(false);
     }
-  };
-
-  const setMockPublicData = () => {
-    setStats({
-      total_grievances: 489,
-      resolved: 420,
-      resolution_rate: 85.8,
-      department_breakdown: {
-        "water_supply": 145,
-        "electricity": 98,
-        "roads": 110,
-        "drainage": 72,
-        "sanitation": 64
-      },
-      priority_breakdown: {
-        "critical": 45,
-        "high": 120,
-        "medium": 240,
-        "low": 84
-      }
-    });
   };
 
   useEffect(() => {
@@ -85,6 +66,39 @@ export default function PublicDashboard() {
         <div className="dashboard-table-card" style={{ textAlign: "center", padding: "40px" }}>
           <Clock className="w-8 h-8 animate-spin" style={{ margin: "0 auto 12px auto", color: "var(--gov-blue-primary)" }} />
           <span>{t("loading_data")}</span>
+        </div>
+      )}
+
+      {error && (
+        <div className="dashboard-table-card" style={{ 
+          textAlign: "center", 
+          padding: "40px", 
+          border: "1px solid #fca5a5", 
+          backgroundColor: "#fef2f2", 
+          color: "#b91c1c",
+          borderRadius: "8px",
+          margin: "20px auto",
+          maxWidth: "600px"
+        }}>
+          <AlertTriangle className="w-8 h-8" style={{ margin: "0 auto 12px auto", color: "#b91c1c" }} />
+          <strong style={{ display: "block", marginBottom: "6px", fontSize: "16px" }}>System Connection Alert</strong>
+          <span>{error}</span>
+          <button 
+            onClick={fetchPublicStats} 
+            style={{ 
+              display: "block", 
+              margin: "16px auto 0 auto", 
+              padding: "8px 16px", 
+              backgroundColor: "#b91c1c", 
+              color: "#fff", 
+              border: "none", 
+              borderRadius: "4px", 
+              cursor: "pointer",
+              fontWeight: "bold"
+            }}
+          >
+            Retry Connection
+          </button>
         </div>
       )}
 

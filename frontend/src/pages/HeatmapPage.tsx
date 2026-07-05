@@ -44,12 +44,12 @@ export default function HeatmapPage() {
   const [baseMap, setBaseMap] = useState<"osm" | "bhuvan_sat" | "bhuvan_lulc">("osm");
   const [censusView, setCensusView] = useState<"none" | "wards" | "india">("none");
   const [censusColoring, setCensusColoring] = useState<"population" | "literacy" | "none">("none");
-  const [gatiShaktiRail, setGatiShaktiRail] = useState(false);
-  const [gatiShaktiRoad, setGatiShaktiRoad] = useState(false);
-  const [gatiShaktiPipe, setGatiShaktiPipe] = useState(false);
-  const [osmPois, setOsmPois] = useState(false);
-  const [imdWeather, setImdWeather] = useState(false);
-  const [syncCpgrams, setSyncCpgrams] = useState(false);
+  const [gatiShaktiRail, setGatiShaktiRail] = useState(true);
+  const [gatiShaktiRoad, setGatiShaktiRoad] = useState(true);
+  const [gatiShaktiPipe, setGatiShaktiPipe] = useState(true);
+  const [osmPois, setOsmPois] = useState(true);
+  const [imdWeather, setImdWeather] = useState(true);
+  const [syncCpgrams, setSyncCpgrams] = useState(true);
 
   const [censusWardsGeoJSON, setCensusWardsGeoJSON] = useState<any>(null);
   const [censusIndiaGeoJSON, setCensusIndiaGeoJSON] = useState<any>(null);
@@ -732,21 +732,6 @@ export default function HeatmapPage() {
               {locating ? t("gis_syncing_location") : t("gis_current_location")}
             </button>
 
-            {/* Sync National Portals Checkbox */}
-            <div className="filter-checkbox-item" style={{ borderBottom: "1px solid #e2e8f0", paddingBottom: "12px" }}>
-              <input
-                type="checkbox"
-                id="syncCpgramsCheckbox"
-                checked={syncCpgrams}
-                onChange={(e) => setSyncCpgrams(e.target.checked)}
-              />
-              <label htmlFor="syncCpgramsCheckbox" style={{ display: "flex", alignItems: "center", gap: "6px", fontWeight: "bold", fontSize: "13px", cursor: "pointer" }}>
-                <Activity className="w-4 h-4 text-indigo-600" />
-                {t("gis_sync_cpgrams")}
-              </label>
-            </div>
-
-
             {/* Base Map Selection */}
             <div className="filter-group">
               <label className="font-bold text-gray-700 block mb-1 text-sm">{t("gis_base_maps")}</label>
@@ -785,48 +770,6 @@ export default function HeatmapPage() {
                   <option value="literacy">{t("gis_choropleth_lit")}</option>
                 </select>
               )}
-            </div>
-
-            {/* PM GatiShakti Infrastructure Layers */}
-            <div className="filter-group">
-              <label className="font-bold text-gray-700 block mb-2 text-sm">{t("gis_gatishakti_layers")}</label>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "13px" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                  <input type="checkbox" checked={gatiShaktiRail} onChange={(e) => setGatiShaktiRail(e.target.checked)} />
-                  <Train className="w-4 h-4 text-slate-700" />
-                  {t("gis_gatishakti_rail")}
-                </label>
-                <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                  <input type="checkbox" checked={gatiShaktiRoad} onChange={(e) => setGatiShaktiRoad(e.target.checked)} />
-                  <Milestone className="w-4 h-4 text-orange-600" />
-                  {t("gis_gatishakti_road")}
-                </label>
-                <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                  <input type="checkbox" checked={gatiShaktiPipe} onChange={(e) => setGatiShaktiPipe(e.target.checked)} />
-                  <Activity className="w-4 h-4 text-cyan-600" />
-                  {t("gis_gatishakti_pipe")}
-                </label>
-              </div>
-            </div>
-
-            {/* OpenStreetMap POI Toggle */}
-            <div className="filter-group">
-              <label className="font-bold text-gray-700 block mb-1 text-sm">OpenStreetMap Services</label>
-              <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", cursor: "pointer" }}>
-                <input type="checkbox" checked={osmPois} onChange={(e) => setOsmPois(e.target.checked)} />
-                <MapIcon className="w-4 h-4 text-emerald-600" />
-                {t("gis_osm_pois")}
-              </label>
-            </div>
-
-            {/* IMD Weather Forecast */}
-            <div className="filter-group">
-              <label className="font-bold text-gray-700 block mb-1 text-sm">{t("gis_imd_weather")}</label>
-              <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", cursor: "pointer" }}>
-                <input type="checkbox" checked={imdWeather} onChange={(e) => setImdWeather(e.target.checked)} />
-                <CloudRain className="w-4 h-4 text-blue-500" />
-                {t("gis_imd_alert_title")}
-              </label>
             </div>
 
             {/* IMD Weather Alert Widget */}

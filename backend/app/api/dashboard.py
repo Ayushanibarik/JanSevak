@@ -67,6 +67,22 @@ def get_dashboard_stats(
     )
 
 
+def map_cpgrams_department(dept_name: str) -> str:
+    mapping = {
+        "Agriculture & Farmers Welfare": "government_services",
+        "Water Resources": "water_supply",
+        "Roads & Highways": "roads",
+        "Communications": "government_services",
+        "Railways": "transport",
+        "Labour & Employment": "government_services",
+        "Finance": "government_services",
+        "Electronics & IT": "government_services",
+        "Water Supply": "water_supply",
+        "Petroleum & Gas": "other"
+    }
+    return mapping.get(dept_name, "other")
+
+
 @router.get("/public")
 def get_public_stats(db: Session = Depends(get_db)):
     """Public transparency dashboard — no auth required, no PII."""
@@ -78,15 +94,49 @@ def get_public_stats(db: Session = Depends(get_db)):
     dept_counts = db.query(
         Grievance.department, func.count(Grievance.id)
     ).group_by(Grievance.department).all()
+    
+    dept_breakdown = {}
+    for d, c in dept_counts:
+        key = d.value if hasattr(d, 'value') else str(d)
+        dept_breakdown[key] = c
 
     priority_counts = db.query(
         Grievance.priority, func.count(Grievance.id)
     ).group_by(Grievance.priority).all()
+    
+    priority_breakdown = {}
+    for p, c in priority_counts:
+        key = p.value if hasattr(p, 'value') else str(p)
+        priority_breakdown[key] = c
+
+    # Sync with CPGRAMS by default
+    try:
+        from app.api.gis import get_cpgrams_grievances
+        cpgrams = get_cpgrams_grievances()
+    except Exception:
+        cpgrams = []
+
+    total += len(cpgrams)
+    for g in cpgrams:
+        # CPGRAMS status mapping (assume resolved if completed, citizen_verified, closed)
+        status_val = g.get("status")
+        if status_val in ["completed", "citizen_verified", "closed"]:
+            resolved += 1
+            
+        # Map and update department count
+        mapped_dept = map_cpgrams_department(g.get("department"))
+        dept_breakdown[mapped_dept] = dept_breakdown.get(mapped_dept, 0) + 1
+        
+        # Map and update priority count
+        prio_val = g.get("priority")
+        if prio_val:
+            priority_breakdown[prio_val] = priority_breakdown.get(prio_val, 0) + 1
 
     return {
         "total_grievances": total,
         "resolved": resolved,
         "resolution_rate": round(resolved / total * 100, 1) if total > 0 else 0,
-        "department_breakdown": {d.value: c for d, c in dept_counts},
-        "priority_breakdown": {p.value: c for p, c in priority_counts},
+        "department_breakdown": dept_breakdown,
+        "priority_breakdown": priority_breakdown,
     }
+
