@@ -15,6 +15,7 @@ class GrievanceCreate(BaseModel):
     address: Optional[str] = None
     ward_number: Optional[str] = None
     district_code: str = "BBSR"
+    state: Optional[str] = "Odisha"
     pincode: Optional[str] = None
     is_emergency: bool = False
     is_anonymous: bool = False
@@ -32,6 +33,7 @@ class GrievancePublicResponse(BaseModel):
     is_emergency: bool
     district_code: str
     ward_number: Optional[str]
+    state: Optional[str]
     created_at: datetime
     updated_at: Optional[datetime]
     # NO reporter name, phone, email — privacy by design

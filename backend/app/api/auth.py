@@ -51,7 +51,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
             raise credentials_exception
     except JWTError:
         raise credentials_exception
-    user = db.query(User).filter(User.email == email).first()
+    user = db.query(User).filter((User.email == email) | (User.phone_number == email)).first()
     if user is None:
         raise credentials_exception
     return user
@@ -77,7 +77,8 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
         hierarchy_level=ROLE_HIERARCHY.get(user_in.role, 0),
         department=user_in.department,
         district_code=user_in.district_code,
-        ward_number=user_in.ward_number
+        ward_number=user_in.ward_number,
+        state=user_in.state
     )
     db.add(new_user)
     db.commit()
@@ -86,8 +87,10 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/token", response_model=Token)
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    # using username field for email
-    user = db.query(User).filter(User.email == form_data.username).first()
+    # using username field for email or phone number
+    user = db.query(User).filter(
+        (User.email == form_data.username) | (User.phone_number == form_data.username)
+    ).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -96,6 +99,10 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.email, "role": user.role.name}, expires_delta=access_token_expires
+        data={"sub": user.email if user.email else user.phone_number, "role": user.role.name}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+@router.get("/me", response_model=UserResponse)
+def get_me(current_user: User = Depends(get_current_user)):
+    return current_user

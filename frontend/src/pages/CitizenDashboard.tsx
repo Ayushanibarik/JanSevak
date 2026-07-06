@@ -26,7 +26,12 @@ export default function CitizenDashboard() {
   const fetchCitizenData = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001'}/grievances/`);
+      const authToken = localStorage.getItem("token");
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001'}/grievances/`, {
+        headers: {
+          "Authorization": `Bearer ${authToken}`
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         const localGrievances = JSON.parse(localStorage.getItem("local_grievances") || "[]");

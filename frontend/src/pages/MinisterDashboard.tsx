@@ -20,18 +20,27 @@ export default function MinisterDashboard() {
   const fetchMinisterData = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001'}/dashboard/public`);
+      const authToken = localStorage.getItem("token");
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001'}/dashboard/stats`, {
+        headers: {
+          "Authorization": `Bearer ${authToken}`
+        }
+      });
       if (response.ok) {
         const data = await response.json();
+        const rate = data.total_grievances > 0 
+          ? ((data.resolved / data.total_grievances) * 100).toFixed(1) 
+          : "0.0";
         setStats({
-          total_grievances: data.total_grievances * 10,
-          resolved: data.resolved * 10,
-          resolution_rate: data.resolution_rate
+          total_grievances: data.total_grievances,
+          resolved: data.resolved,
+          resolution_rate: rate
         });
       } else {
         setMockMinisterData();
       }
     } catch (err) {
+      console.error(err);
       setMockMinisterData();
     } finally {
       setLoading(false);

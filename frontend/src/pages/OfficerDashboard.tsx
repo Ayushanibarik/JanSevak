@@ -33,7 +33,12 @@ export default function OfficerDashboard() {
   const fetchAssignedData = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001'}/grievances/?department=${department}`);
+      const authToken = localStorage.getItem("token");
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001'}/grievances/?department=${department}`, {
+        headers: {
+          "Authorization": `Bearer ${authToken}`
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         
@@ -128,9 +133,13 @@ export default function OfficerDashboard() {
 
   const handleAccept = async (token: string) => {
     try {
+      const authToken = localStorage.getItem("token");
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001'}/grievances/${token}/status`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${authToken}`
+        },
         body: JSON.stringify({ new_status: "accepted", notes: "Grievance accepted by officer, investigation/team dispatched." })
       });
       if (response.ok) {
@@ -147,9 +156,13 @@ export default function OfficerDashboard() {
 
   const handleResolve = async (token: string) => {
     try {
+      const authToken = localStorage.getItem("token");
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001'}/grievances/${token}/status`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${authToken}`
+        },
         body: JSON.stringify({ new_status: "completed", notes: `Resolved: ${resolutionNotes}` })
       });
       if (response.ok) {
@@ -168,9 +181,13 @@ export default function OfficerDashboard() {
   const handleReassign = async (token: string) => {
     if (!reassignDept) return;
     try {
+      const authToken = localStorage.getItem("token");
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001'}/grievances/${token}/reassign`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${authToken}`
+        },
         body: JSON.stringify({ new_department: reassignDept, reason: "Reassigned by department officer due to jurisdiction." })
       });
       if (response.ok) {

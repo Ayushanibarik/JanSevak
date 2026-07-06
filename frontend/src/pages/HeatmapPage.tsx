@@ -772,6 +772,68 @@ export default function HeatmapPage() {
               )}
             </div>
 
+            {/* GIS Infrastructure Layers (PM GatiShakti) */}
+            <div style={{ padding: "12px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "8px" }}>
+              <label className="font-bold text-gray-700 block mb-2 text-sm" style={{ fontWeight: "bold" }}>PM GatiShakti Infrastructure</label>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", cursor: "pointer" }}>
+                  <input 
+                    type="checkbox" 
+                    checked={gatiShaktiRail} 
+                    onChange={(e) => setGatiShaktiRail(e.target.checked)} 
+                  />
+                  <span>Railway Network Layer</span>
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", cursor: "pointer" }}>
+                  <input 
+                    type="checkbox" 
+                    checked={gatiShaktiRoad} 
+                    onChange={(e) => setGatiShaktiRoad(e.target.checked)} 
+                  />
+                  <span>National Highway Layer</span>
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", cursor: "pointer" }}>
+                  <input 
+                    type="checkbox" 
+                    checked={gatiShaktiPipe} 
+                    onChange={(e) => setGatiShaktiPipe(e.target.checked)} 
+                  />
+                  <span>Utility Pipeline Layer</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Other Layer Overlays */}
+            <div style={{ padding: "12px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "8px" }}>
+              <label className="font-bold text-gray-700 block mb-2 text-sm" style={{ fontWeight: "bold" }}>Layer Overlays</label>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", cursor: "pointer" }}>
+                  <input 
+                    type="checkbox" 
+                    checked={osmPois} 
+                    onChange={(e) => setOsmPois(e.target.checked)} 
+                  />
+                  <span>OSM POIs (Hospitals, Schools, Police)</span>
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", cursor: "pointer" }}>
+                  <input 
+                    type="checkbox" 
+                    checked={imdWeather} 
+                    onChange={(e) => setImdWeather(e.target.checked)} 
+                  />
+                  <span>IMD Weather Forecast & Flood Zones</span>
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", cursor: "pointer" }}>
+                  <input 
+                    type="checkbox" 
+                    checked={syncCpgrams} 
+                    onChange={(e) => setSyncCpgrams(e.target.checked)} 
+                  />
+                  <span>CPGRAMS Synced Public Grievances</span>
+                </label>
+              </div>
+            </div>
+
             {/* IMD Weather Alert Widget */}
             {imdWeather && imdForecastData && (
               <div style={{ padding: "12px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "8px" }}>

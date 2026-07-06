@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 from app.db.session import get_db
 from app.models.grievance import Grievance, Department, GrievanceStatus, Priority
-from app.models.user import User
+from app.models.user import User, RoleEnum
 from app.api.auth import get_current_user
 from app.schemas.grievance import DashboardStats
 
@@ -21,7 +21,18 @@ def get_dashboard_stats(
     base_query = db.query(Grievance)
 
     # Filter by officer's jurisdiction
-    if current_user.role not in ["minister", "state_secretary", "district_collector"]:
+    if current_user.role in [RoleEnum.STATE_SECRETARY, RoleEnum.MINISTER]:
+        base_query = base_query.filter(Grievance.state == current_user.state)
+    elif current_user.role in [RoleEnum.MUNICIPAL_COMMISSIONER, RoleEnum.DISTRICT_COLLECTOR]:
+        base_query = base_query.filter(
+            Grievance.state == current_user.state,
+            Grievance.district_code == current_user.district_code
+        )
+    else:
+        base_query = base_query.filter(
+            Grievance.state == current_user.state,
+            Grievance.district_code == current_user.district_code
+        )
         if current_user.department:
             base_query = base_query.filter(Grievance.department == current_user.department)
         if current_user.ward_number:

@@ -63,6 +63,7 @@ class User(Base):
     # 0=Citizen, 1=Ward Officer, ..., 8=Minister
 
     # ── Jurisdiction ──
+    state = Column(String(50), nullable=True, default="Odisha")
     department = Column(String(50), nullable=True)
     # Only for officers — which department they belong to
     district_code = Column(String(10), nullable=True, default="BBSR")

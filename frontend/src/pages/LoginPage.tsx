@@ -15,47 +15,59 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
 
-    // Simulate/mock API login
-    if (activeTab === "citizen") {
-      // Mock citizen
-      localStorage.setItem("userRole", "citizen");
-      localStorage.setItem("userDistrict", "BBSR");
-      navigate("/dashboard/citizen");
-    } else {
-      // Mock officer check
-      const input = identifier.toLowerCase().trim();
-      let role = "junior_engineer";
-      let dept = "roads";
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001'}/auth/token`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          username: identifier.trim(),
+          password: password,
+        }),
+      });
 
-      if (input.includes("ward") || input.includes("officer")) {
-        role = "ward_officer";
-        dept = "sanitation";
-      } else if (input.includes("commissioner") || input.includes("admin")) {
-        role = "municipal_commissioner";
-        dept = "all";
-      } else if (input.includes("minister")) {
-        role = "minister";
-        dept = "all";
-      } else if (input.includes("collector")) {
-        role = "district_collector";
-        dept = "all";
-      } else if (input.includes("je")) {
-        role = "junior_engineer";
-        dept = "roads";
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: "Login failed" }));
+        setError(errorData.detail || "Incorrect username/password. Please try again.");
+        return;
       }
-      
-      localStorage.setItem("userRole", role);
-      localStorage.setItem("userDept", dept);
-      localStorage.setItem("userDistrict", "BBSR");
 
-      // Redirect depending on role
-      if (role === "ward_officer" || role === "junior_engineer") {
-        navigate("/dashboard/officer");
-      } else if (role === "minister") {
-        navigate("/dashboard/minister");
+      const data = await response.json();
+      localStorage.setItem("token", data.access_token);
+
+      // Fetch user profile using /auth/me
+      const meResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001'}/auth/me`, {
+        headers: {
+          "Authorization": `Bearer ${data.access_token}`,
+        },
+      });
+
+      if (meResponse.ok) {
+        const meData = await meResponse.json();
+        localStorage.setItem("userRole", meData.role);
+        localStorage.setItem("userDept", meData.department || "all");
+        localStorage.setItem("userDistrict", meData.district_code || "BBSR");
+        localStorage.setItem("userState", meData.state || "Odisha");
+        localStorage.setItem("userWard", meData.ward_number || "");
+        localStorage.setItem("userName", meData.full_name);
+
+        // Redirect depending on role
+        if (meData.role === "ward_officer" || meData.role === "junior_engineer" || meData.role === "assistant_engineer" || meData.role === "executive_engineer") {
+          navigate("/dashboard/officer");
+        } else if (meData.role === "minister") {
+          navigate("/dashboard/minister");
+        } else if (meData.role === "citizen") {
+          navigate("/dashboard/citizen");
+        } else {
+          navigate("/dashboard/admin");
+        }
       } else {
-        navigate("/dashboard/admin");
+        setError("Failed to fetch user profile details.");
       }
+    } catch (err) {
+      console.error("Login error", err);
+      setError("Server connection failed. Please ensure the backend is running.");
     }
   };
 

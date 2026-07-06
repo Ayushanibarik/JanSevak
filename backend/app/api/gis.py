@@ -52,7 +52,7 @@ def get_complaint_heatmap(
             department,
             sub_category,
             status,
-            ST_AsGeoJSON(geom)::json AS geometry
+            ('{"type": "Point", "coordinates": [' || longitude || ', ' || latitude || ']}')::json AS geometry
         FROM grievances 
         WHERE {where_clause}
     """)
@@ -92,20 +92,23 @@ def get_service_buffer(lat: float, lon: float, radius_km: float = 5.0, db: Sessi
             priority,
             department,
             sub_category,
-            ST_Distance(
-                geom::geography, 
-                ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography
-            ) / 1000 AS distance_km
+            (6371 * acos(
+                least(1.0, greatest(-1.0, 
+                    cos(radians(:lat)) * cos(radians(latitude)) * cos(radians(longitude) - radians(:lon)) + 
+                    sin(radians(:lat)) * sin(radians(latitude))
+                ))
+            )) AS distance_km
         FROM grievances
-        WHERE ST_DWithin(
-            geom::geography, 
-            ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography, 
-            :radius_meters
-        )
+        WHERE (6371 * acos(
+            least(1.0, greatest(-1.0, 
+                cos(radians(:lat)) * cos(radians(latitude)) * cos(radians(longitude) - radians(:lon)) + 
+                sin(radians(:lat)) * sin(radians(latitude))
+            ))
+        )) <= :radius_km
         ORDER BY distance_km ASC
     """)
     
-    result = db.execute(query, {"lat": lat, "lon": lon, "radius_meters": radius_km * 1000}).fetchall()
+    result = db.execute(query, {"lat": lat, "lon": lon, "radius_km": radius_km}).fetchall()
     
     return [
         {
@@ -426,10 +429,15 @@ def get_india_census_data():
                     break
             
             if state_name:
-                clean_name = state_name.replace("&", "and").replace("and", "").replace("Islands", "").replace("islands", "").strip().lower()
+                def clean_str(s):
+                    s = s.lower()
+                    for word in ["and", "islands", "island", "territory", "union", "&", "state", "ut", "ltd"]:
+                        s = s.replace(word, "")
+                    return "".join(c for c in s if c.isalnum())
+                clean_name = clean_str(state_name)
                 matched_stats = None
                 for official_name, stats in CENSUS_2011_STATES.items():
-                    clean_official = official_name.replace("&", "and").replace("and", "").replace("Islands", "").replace("islands", "").strip().lower()
+                    clean_official = clean_str(official_name)
                     if clean_official in clean_name or clean_name in clean_official:
                         matched_stats = stats
                         props["state_name_official"] = official_name

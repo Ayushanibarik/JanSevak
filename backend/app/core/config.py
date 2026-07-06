@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     POSTGRES_USER: str = "postgres"
     POSTGRES_PASSWORD: str = "postgres"
     POSTGRES_SERVER: str = "127.0.0.1"
-    POSTGRES_PORT: str = "5433"
+    POSTGRES_PORT: str = "5432"
     POSTGRES_DB: str = "janmitra_db"
     
     @property

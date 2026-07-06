@@ -7,6 +7,7 @@ from app.db.session import get_db
 from app.models.grievance import Grievance, Department, GrievanceStatus, Priority, DEPARTMENT_SUBCATEGORIES
 from app.models.grievance_timeline import GrievanceTimeline
 from app.models.user import User, RoleEnum
+from app.schemas.user import UserResponse
 from app.schemas.grievance import (
     GrievanceCreate, GrievancePublicResponse, GrievanceOfficerResponse,
     GrievanceStatusUpdate, GrievanceFeedback, TimelineEntryResponse,
@@ -30,6 +31,7 @@ async def create_grievance(
     latitude: float = Form(...),
     longitude: float = Form(...),
     district_code: str = Form("BBSR"),
+    state: str = Form("Odisha"),
     ward_number: Optional[str] = Form(None),
     address: Optional[str] = Form(None),
     pincode: Optional[str] = Form(None),
@@ -127,16 +129,18 @@ async def create_grievance(
     is_duplicate_of = None
     if embeddings:
         try:
-            # Query similar grievances in the same district using pgvector
-            from sqlalchemy import select
-            similar_grievance = db.query(Grievance).filter(
+            # Query recent grievances in the same district and department
+            recent_grievances = db.query(Grievance).filter(
                 Grievance.district_code == district_code,
-                Grievance.embedding.cosine_distance(embeddings) < 0.15
-            ).first()
-            if similar_grievance:
-                is_duplicate_of = similar_grievance.id
+                Grievance.department == department
+            ).all()
+            from app.core.similarity import check_text_duplicate
+            for g in recent_grievances:
+                if g.embedding and check_text_duplicate(embeddings, g.embedding, threshold=0.85):
+                    is_duplicate_of = g.id
+                    break
         except Exception as e:
-            logger.warning(f"pgvector cosine similarity query failed: {e}")
+            logger.warning(f"Duplicate check failed: {e}")
 
     # Create grievance
     grievance = Grievance(
@@ -153,6 +157,7 @@ async def create_grievance(
         address=address,
         ward_number=ward_number,
         district_code=district_code,
+        state=state,
         pincode=pincode,
         geom=f"SRID=4326;POINT({longitude} {latitude})",
         image_url=image_url,
@@ -216,8 +221,30 @@ def list_grievances(
     priority_filter: Optional[Priority] = None,
     district: Optional[str] = None,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     query = db.query(Grievance)
+
+    # Apply strict role-based jurisdiction boundaries
+    if current_user.role == RoleEnum.WARD_OFFICER:
+        query = query.filter(
+            Grievance.district_code == current_user.district_code,
+            Grievance.ward_number == current_user.ward_number
+        )
+    elif current_user.role in [RoleEnum.JUNIOR_ENGINEER, RoleEnum.ASSISTANT_ENGINEER, RoleEnum.EXECUTIVE_ENGINEER]:
+        query = query.filter(
+            Grievance.district_code == current_user.district_code,
+            Grievance.department == current_user.department
+        )
+    elif current_user.role in [RoleEnum.MUNICIPAL_COMMISSIONER, RoleEnum.DISTRICT_COLLECTOR]:
+        query = query.filter(Grievance.district_code == current_user.district_code)
+    elif current_user.role in [RoleEnum.STATE_SECRETARY, RoleEnum.MINISTER]:
+        query = query.filter(Grievance.state == current_user.state)
+    elif current_user.role == RoleEnum.CITIZEN:
+        # Citizens see their own grievances only
+        query = query.filter(Grievance.reporter_id == current_user.id)
+
+    # Additional query filters
     if department:
         query = query.filter(Grievance.department == department)
     if status_filter:
@@ -226,6 +253,7 @@ def list_grievances(
         query = query.filter(Grievance.priority == priority_filter)
     if district:
         query = query.filter(Grievance.district_code == district)
+        
     return query.order_by(Grievance.created_at.desc()).limit(200).all()
 
 
@@ -373,3 +401,92 @@ def escalate_grievance(
     db.commit()
     db.refresh(grievance)
     return grievance
+
+
+@router.get("/{token}/routing", response_model=List[UserResponse])
+def get_grievance_routing(token: str, db: Session = Depends(get_db)):
+    grievance = db.query(Grievance).filter(Grievance.grievance_token == token).first()
+    if not grievance:
+        raise HTTPException(404, "Grievance not found. Please check your token ID.")
+
+    officers = []
+
+    # 1. Ward Officer (Level 1)
+    if grievance.ward_number:
+        wo = db.query(User).filter(
+            User.role == RoleEnum.WARD_OFFICER,
+            User.district_code == grievance.district_code,
+            User.ward_number == grievance.ward_number
+        ).first()
+        if wo:
+            officers.append(wo)
+
+    # 2. Junior Engineer (Level 2)
+    je = db.query(User).filter(
+        User.role == RoleEnum.JUNIOR_ENGINEER,
+        User.district_code == grievance.district_code,
+        User.department == grievance.department.value
+    ).first()
+    if je:
+        officers.append(je)
+
+    # 3. Assistant Engineer (Level 3)
+    ae = db.query(User).filter(
+        User.role == RoleEnum.ASSISTANT_ENGINEER,
+        User.district_code == grievance.district_code,
+        User.department == grievance.department.value
+    ).first()
+    if ae:
+        officers.append(ae)
+
+    # 4. Executive Engineer (Level 4)
+    ee = db.query(User).filter(
+        User.role == RoleEnum.EXECUTIVE_ENGINEER,
+        User.district_code == grievance.district_code,
+        User.department == grievance.department.value
+    ).first()
+    if ee:
+        officers.append(ee)
+
+    # 5. Municipal Commissioner (Level 5)
+    mc = db.query(User).filter(
+        User.role == RoleEnum.MUNICIPAL_COMMISSIONER,
+        User.district_code == grievance.district_code
+    ).first()
+    if mc:
+        officers.append(mc)
+
+    # 6. District Collector (Level 6)
+    dc = db.query(User).filter(
+        User.role == RoleEnum.DISTRICT_COLLECTOR,
+        User.district_code == grievance.district_code
+    ).first()
+    if dc:
+        officers.append(dc)
+
+    # 7. State Secretary (Level 7)
+    ss = db.query(User).filter(
+        User.role == RoleEnum.STATE_SECRETARY,
+        User.state == grievance.state
+    ).first()
+    if ss:
+        officers.append(ss)
+
+    # 8. Minister (Level 8)
+    min_off = db.query(User).filter(
+        User.role == RoleEnum.MINISTER,
+        User.state == grievance.state
+    ).first()
+    if min_off:
+        officers.append(min_off)
+
+    # Remove duplicates preserving order
+    seen = set()
+    unique_officers = []
+    for o in officers:
+        if o.id not in seen:
+            seen.add(o.id)
+            unique_officers.append(o)
+
+    unique_officers.sort(key=lambda u: u.hierarchy_level)
+    return unique_officers

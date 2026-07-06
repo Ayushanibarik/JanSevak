@@ -160,10 +160,16 @@ SCENARIOS = [
     }
 ]
 
-def generate_random_coords():
-    lat = random.uniform(LAT_MIN, LAT_MAX)
-    lon = random.uniform(LON_MIN, LON_MAX)
-    return lat, lon
+BBOX = {
+    "BBSR": (20.25, 20.35, 85.75, 85.88),
+    "CTC": (20.42, 20.50, 85.83, 85.93),
+    "PAT": (25.55, 25.63, 85.08, 85.18),
+    "BGS": (25.38, 25.45, 86.08, 86.18)
+}
+
+def generate_random_coords(dist):
+    lat_min, lat_max, lon_min, lon_max = BBOX.get(dist, BBOX["BBSR"])
+    return random.uniform(lat_min, lat_max), random.uniform(lon_min, lon_max)
 
 def seed_database():
     db = SessionLocal()
@@ -177,142 +183,244 @@ def seed_database():
     print("Creating Demo Officer Accounts...")
     hashed_pass = get_password_hash("password123")
     
-    # 1. Citizen
-    citizen = User(
-        full_name="Ramesh Kumar (Citizen)",
+    # 1. Citizens
+    citizen_odisha = User(
+        full_name="Ramesh Kumar (Odisha Citizen)",
         email="citizen.demo@example.com",
         phone_number="9999999999",
         hashed_password=hashed_pass,
         role=RoleEnum.CITIZEN,
         hierarchy_level=0,
-        district_code="BBSR"
+        district_code="BBSR",
+        state="Odisha"
     )
-    db.add(citizen)
+    citizen_bihar = User(
+        full_name="Ramesh Bihar (Bihar Citizen)",
+        email="citizen.bihar@example.com",
+        phone_number="8888888888",
+        hashed_password=hashed_pass,
+        role=RoleEnum.CITIZEN,
+        hierarchy_level=0,
+        district_code="BGS",
+        state="Bihar"
+    )
+    db.add_all([citizen_odisha, citizen_bihar])
     db.commit()
-    db.refresh(citizen)
+    db.refresh(citizen_odisha)
+    db.refresh(citizen_bihar)
 
     # 2. Hierarchy Officers (representing level 1 to 8)
-    officers = []
-    
     # Department specific Junior, Assistant, and Executive Engineers
     dept_officers = {}
     
-    # Populate major departments with JE, AE, EE
     major_depts = [Department.WATER_SUPPLY, Department.ELECTRICITY, Department.ROADS, Department.DRAINAGE, Department.SANITATION]
     
-    for dept in major_depts:
-        dept_name = dept.value
-        # JE (Level 2)
-        je = User(
-            full_name=f"Rajesh Patra (JE - {dept_name.replace('_', ' ').title()})",
-            email=f"je.{dept_name}@gov.in",
-            phone_number=f"9777{random.randint(100000, 999999)}",
-            hashed_password=hashed_pass,
-            role=RoleEnum.JUNIOR_ENGINEER,
-            hierarchy_level=2,
-            department=dept_name,
-            district_code="BBSR"
-        )
-        # AE (Level 3)
-        ae = User(
-            full_name=f"Suresh Mohanty (AE - {dept_name.replace('_', ' ').title()})",
-            email=f"ae.{dept_name}@gov.in",
-            phone_number=f"9666{random.randint(100000, 999999)}",
-            hashed_password=hashed_pass,
-            role=RoleEnum.ASSISTANT_ENGINEER,
-            hierarchy_level=3,
-            department=dept_name,
-            district_code="BBSR"
-        )
-        # EE (Level 4)
-        ee = User(
-            full_name=f"Amit Verma (EE - {dept_name.replace('_', ' ').title()})",
-            email=f"ee.{dept_name}@gov.in",
-            phone_number=f"9555{random.randint(100000, 999999)}",
-            hashed_password=hashed_pass,
-            role=RoleEnum.EXECUTIVE_ENGINEER,
-            hierarchy_level=4,
-            department=dept_name,
-            district_code="BBSR"
-        )
-        db.add_all([je, ae, ee])
-        db.commit()
-        db.refresh(je)
-        db.refresh(ae)
-        db.refresh(ee)
-        dept_officers[dept] = {2: je, 3: ae, 4: ee}
+    for state, dist in [("Odisha", "BBSR"), ("Bihar", "BGS")]:
+        dist_lower = dist.lower()
+        for dept in major_depts:
+            dept_name = dept.value
+            # JE (Level 2)
+            je = User(
+                full_name=f"JE - {dept_name.replace('_', ' ').title()} ({state}, {dist})",
+                email=f"je.{dept_name}.{dist_lower}@gov.in",
+                phone_number=f"9777{random.randint(100000, 999999)}",
+                hashed_password=hashed_pass,
+                role=RoleEnum.JUNIOR_ENGINEER,
+                hierarchy_level=2,
+                department=dept_name,
+                district_code=dist,
+                state=state
+            )
+            # AE (Level 3)
+            ae = User(
+                full_name=f"AE - {dept_name.replace('_', ' ').title()} ({state}, {dist})",
+                email=f"ae.{dept_name}.{dist_lower}@gov.in",
+                phone_number=f"9666{random.randint(100000, 999999)}",
+                hashed_password=hashed_pass,
+                role=RoleEnum.ASSISTANT_ENGINEER,
+                hierarchy_level=3,
+                department=dept_name,
+                district_code=dist,
+                state=state
+            )
+            # EE (Level 4)
+            ee = User(
+                full_name=f"EE - {dept_name.replace('_', ' ').title()} ({state}, {dist})",
+                email=f"ee.{dept_name}.{dist_lower}@gov.in",
+                phone_number=f"9555{random.randint(100000, 999999)}",
+                hashed_password=hashed_pass,
+                role=RoleEnum.EXECUTIVE_ENGINEER,
+                hierarchy_level=4,
+                department=dept_name,
+                district_code=dist,
+                state=state
+            )
+            db.add_all([je, ae, ee])
+            db.commit()
+            db.refresh(je)
+            db.refresh(ae)
+            db.refresh(ee)
+            dept_officers[(state, dist, dept)] = {2: je, 3: ae, 4: ee}
 
-    # Ward Officer (Level 1)
-    ward_officer = User(
-        full_name="Binod Sahu (Ward Officer)",
-        email="ward.officer@gov.in",
+    # Ward Officers (Level 1)
+    ward_officer_bbsr = User(
+        full_name="Binod Sahu (Ward Officer - Bhubaneswar)",
+        email="ward.officer.bbsr@gov.in",
         phone_number="9888888888",
         hashed_password=hashed_pass,
         role=RoleEnum.WARD_OFFICER,
         hierarchy_level=1,
         ward_number="12",
-        district_code="BBSR"
+        district_code="BBSR",
+        state="Odisha"
     )
-    # Municipal Commissioner (Level 5)
-    commissioner = User(
-        full_name="Dr. Arindam Das (Municipal Commissioner)",
+    ward_officer_begusarai = User(
+        full_name="Binod Begusarai (Ward Officer - Begusarai)",
+        email="ward.officer.begusarai@gov.in",
+        phone_number="9888888887",
+        hashed_password=hashed_pass,
+        role=RoleEnum.WARD_OFFICER,
+        hierarchy_level=1,
+        ward_number="5",
+        district_code="BGS",
+        state="Bihar"
+    )
+
+    # Municipal Commissioners (Level 5)
+    commissioner_bbsr = User(
+        full_name="Dr. Arindam Das (Commissioner - Bhubaneswar)",
         email="commissioner.bbsr@gov.in",
         phone_number="9444444444",
         hashed_password=hashed_pass,
         role=RoleEnum.MUNICIPAL_COMMISSIONER,
         hierarchy_level=5,
-        district_code="BBSR"
+        district_code="BBSR",
+        state="Odisha"
     )
-    # District Collector (Level 6)
-    collector = User(
-        full_name="Sanjay Singh, IAS (District Collector)",
-        email="collector.khordha@gov.in",
+    commissioner_begusarai = User(
+        full_name="Begusarai Commissioner (Commissioner - Begusarai)",
+        email="commissioner.begusarai@gov.in",
+        phone_number="9444444445",
+        hashed_password=hashed_pass,
+        role=RoleEnum.MUNICIPAL_COMMISSIONER,
+        hierarchy_level=5,
+        district_code="BGS",
+        state="Bihar"
+    )
+
+    # District Collectors (Level 6)
+    collector_bbsr = User(
+        full_name="Sanjay Singh, IAS (Collector - Bhubaneswar/Khordha)",
+        email="collector.bbsr@gov.in",
         phone_number="9333333333",
         hashed_password=hashed_pass,
         role=RoleEnum.DISTRICT_COLLECTOR,
         hierarchy_level=6,
-        district_code="BBSR"
+        district_code="BBSR",
+        state="Odisha"
     )
-    # State Secretary (Level 7)
-    secretary = User(
-        full_name="Priyanka Sen, IAS (State Secretary)",
-        email="sec.housing@gov.in",
+    collector_cuttack = User(
+        full_name="Cuttack Collector, IAS (Collector - Cuttack)",
+        email="collector.cuttack@gov.in",
+        phone_number="9333333334",
+        hashed_password=hashed_pass,
+        role=RoleEnum.DISTRICT_COLLECTOR,
+        hierarchy_level=6,
+        district_code="CTC",
+        state="Odisha"
+    )
+    collector_patna = User(
+        full_name="Patna Collector, IAS (Collector - Patna)",
+        email="collector.patna@gov.in",
+        phone_number="9333333335",
+        hashed_password=hashed_pass,
+        role=RoleEnum.DISTRICT_COLLECTOR,
+        hierarchy_level=6,
+        district_code="PAT",
+        state="Bihar"
+    )
+    collector_begusarai = User(
+        full_name="Begusarai Collector, IAS (Collector - Begusarai)",
+        email="collector.begusarai@gov.in",
+        phone_number="9333333336",
+        hashed_password=hashed_pass,
+        role=RoleEnum.DISTRICT_COLLECTOR,
+        hierarchy_level=6,
+        district_code="BGS",
+        state="Bihar"
+    )
+
+    # State Secretaries (Level 7)
+    secretary_odisha = User(
+        full_name="Priyabrata Mohapatra, IAS (Secretary - Odisha)",
+        email="secretary.odisha@gov.in",
         phone_number="9222222222",
         hashed_password=hashed_pass,
         role=RoleEnum.STATE_SECRETARY,
         hierarchy_level=7,
-        district_code="BBSR"
+        district_code="BBSR",
+        state="Odisha"
     )
-    # Minister (Level 8)
-    minister = User(
-        full_name="Shri Pratap Jena (Urban Development Minister)",
-        email="minister.urban@gov.in",
+    secretary_bihar = User(
+        full_name="Priyanka Sen, IAS (Secretary - Bihar)",
+        email="secretary.bihar@gov.in",
+        phone_number="9222222223",
+        hashed_password=hashed_pass,
+        role=RoleEnum.STATE_SECRETARY,
+        hierarchy_level=7,
+        district_code="PAT",
+        state="Bihar"
+    )
+
+    # Ministers (Level 8)
+    minister_odisha = User(
+        full_name="Priyanka Patnaik (Urban Minister - Odisha)",
+        email="minister.odisha@gov.in",
         phone_number="9111111111",
         hashed_password=hashed_pass,
         role=RoleEnum.MINISTER,
         hierarchy_level=8,
-        district_code="BBSR"
+        district_code="BBSR",
+        state="Odisha"
     )
-    db.add_all([ward_officer, commissioner, collector, secretary, minister])
-    db.commit()
-    db.refresh(ward_officer)
-    db.refresh(commissioner)
-    db.refresh(collector)
-    db.refresh(secretary)
-    db.refresh(minister)
+    minister_bihar = User(
+        full_name="Shri Nitish Kumar (Urban Minister - Bihar)",
+        email="minister.bihar@gov.in",
+        phone_number="9111111112",
+        hashed_password=hashed_pass,
+        role=RoleEnum.MINISTER,
+        hierarchy_level=8,
+        district_code="PAT",
+        state="Bihar"
+    )
 
-    print("Seeding 50+ Grievances...")
-    # Generate 55 grievances
-    mock_vector = [0.05] * 384  # fast mock embedding vector to bypass sentence-transformers
+    db.add_all([
+        ward_officer_bbsr, ward_officer_begusarai,
+        commissioner_bbsr, commissioner_begusarai,
+        collector_bbsr, collector_cuttack, collector_patna, collector_begusarai,
+        secretary_odisha, secretary_bihar,
+        minister_odisha, minister_bihar
+    ])
+    db.commit()
+
+    print("Seeding 80+ Grievances...")
+    # Generate 80 grievances
+    mock_vector = [0.05] * 384
     created_grievances = []
-    
     statuses = list(GrievanceStatus)
     
-    for i in range(55):
+    locations = [
+        ("Odisha", "BBSR", "Bhubaneswar", ["4", "12", "18", "24"]),
+        ("Odisha", "CTC", "Cuttack", ["1", "5", "10", "15"]),
+        ("Bihar", "BGS", "Begusarai", ["2", "5", "8", "12"]),
+        ("Bihar", "PAT", "Patna", ["3", "7", "11", "19"])
+    ]
+
+    for i in range(80):
         scenario = random.choice(SCENARIOS)
-        lat, lon = generate_random_coords()
+        state, dist, city_name, wards = random.choice(locations)
+        lat, lon = generate_random_coords(dist)
         
-        # Select status with realistic distribution (more submitted/assigned/in_progress than completed/false)
         status_weights = [
             0.15,  # SUBMITTED
             0.05,  # AI_VERIFIED
@@ -333,30 +441,27 @@ def seed_database():
         status = random.choices(statuses, weights=status_weights)[0]
         
         # Formulate token
-        token = generate_grievance_token(db, scenario["dept"], "BBSR")
+        token = generate_grievance_token(db, scenario["dept"], dist)
         
         # Assigned Officer
         assigned_officer_id = None
         current_level = 1
         
         if status in [GrievanceStatus.ASSIGNED, GrievanceStatus.ACCEPTED, GrievanceStatus.IN_PROGRESS, GrievanceStatus.COMPLETED]:
-            # Look up officer
-            if scenario["dept"] in dept_officers:
-                assigned_officer_id = dept_officers[scenario["dept"]][2].id  # Assign to JE
+            key = (state, dist, scenario["dept"])
+            if key in dept_officers:
+                assigned_officer_id = dept_officers[key][2].id  # Assign to JE
                 current_level = 2
             else:
-                assigned_officer_id = ward_officer.id
+                assigned_officer_id = ward_officer_bbsr.id if state == "Odisha" else ward_officer_begusarai.id
                 current_level = 1
 
         is_emergency = scenario.get("emergency", False)
-        
-        # Past dates (spread over last 30 days)
         created_at = datetime.utcnow() - timedelta(days=random.randint(1, 30), hours=random.randint(0, 23))
-        
-        # Deadlines
         deadline_hours = 4 if is_emergency else 48
         escalation_deadline = created_at + timedelta(hours=deadline_hours)
 
+        ward_num = random.choice(wards)
         grievance = Grievance(
             grievance_token=token,
             department=scenario["dept"],
@@ -368,14 +473,16 @@ def seed_database():
             is_emergency=is_emergency,
             latitude=lat,
             longitude=lon,
-            address=f"Street {random.randint(1, 25)}, Sector {random.randint(1, 10)}, Ward {random.choice(['4', '12', '18', '24'])}, Bhubaneswar",
-            ward_number=random.choice(["4", "12", "18", "24"]),
-            district_code="BBSR",
-            pincode=f"7510{random.randint(10, 24)}",
+            address=f"Street {random.randint(1, 25)}, Sector {random.randint(1, 10)}, Ward {ward_num}, {city_name}",
+            ward_number=ward_num,
+            district_code=dist,
+            state=state,
+            pincode=f"7510{random.randint(10, 24)}" if state == "Odisha" else f"8511{random.randint(10, 24)}",
             geom=f"SRID=4326;POINT({lon} {lat})",
             is_anonymous=random.choice([True, False, False]),
-            reporter_id=citizen.id,
+            reporter_id=citizen_odisha.id if state == "Odisha" else citizen_bihar.id,
             current_hierarchy_level=current_level,
+            assigned_officer_id=assigned_officer_id,
             escalation_deadline=escalation_deadline,
             embedding=mock_vector,
             ai_department_suggestion=scenario["dept"].value,
@@ -385,7 +492,6 @@ def seed_database():
             created_at=created_at
         )
         
-        # Mock feedback
         if status in [GrievanceStatus.COMPLETED, GrievanceStatus.CITIZEN_VERIFIED, GrievanceStatus.CLOSED]:
             grievance.citizen_feedback_rating = random.choice([1, 2, 4, 5, 5])
             grievance.citizen_feedback_text = "Good job" if grievance.citizen_feedback_rating >= 4 else "Slow response"
@@ -394,7 +500,6 @@ def seed_database():
         db.add(grievance)
         db.flush()
         
-        # Timeline
         t1 = GrievanceTimeline(
             grievance_id=grievance.id,
             old_status=None,
@@ -413,8 +518,7 @@ def seed_database():
                 new_status=GrievanceStatus.ASSIGNED.value,
                 action_type="assignment",
                 notes=f"Auto-assigned to officer (Level {current_level}) based on department.",
-                changed_at=created_at + timedelta(minutes=10),
-                changed_by_id=None
+                changed_at=created_at + timedelta(minutes=10)
             )
             db.add(t2)
 
@@ -422,7 +526,7 @@ def seed_database():
 
     db.commit()
     
-    # 5. Link duplicate child cases (approx 3 duplicate records)
+    # 5. Link duplicate child cases
     print("Setting up duplicate complaints link...")
     for j in range(3):
         child = created_grievances[j]
@@ -440,21 +544,20 @@ def seed_database():
         )
         db.add(t_dup)
         
-    # 6. Add some mock auto-escalations (for overdue items)
+    # 6. Add some mock auto-escalations
     print("Setting up auto-escalations log...")
     now = datetime.utcnow()
     for k in range(5):
         overdue_grievance = created_grievances[10 + k]
-        # set deadline in past and make level higher
         overdue_grievance.escalation_deadline = now - timedelta(hours=2)
         old_level = overdue_grievance.current_hierarchy_level
         new_level = old_level + 1
         
-        # log escalation
+        comm = commissioner_bbsr if overdue_grievance.state == "Odisha" else commissioner_begusarai
         esc = EscalationLog(
             grievance_id=overdue_grievance.id,
             from_officer_id=overdue_grievance.assigned_officer_id,
-            to_officer_id=commissioner.id,
+            to_officer_id=comm.id,
             from_level=old_level,
             to_level=new_level,
             reason="Deadline expired - auto-escalation trigger.",
@@ -464,7 +567,7 @@ def seed_database():
         db.add(esc)
         
         overdue_grievance.current_hierarchy_level = new_level
-        overdue_grievance.assigned_officer_id = commissioner.id
+        overdue_grievance.assigned_officer_id = comm.id
         
         t_esc = GrievanceTimeline(
             grievance_id=overdue_grievance.id,

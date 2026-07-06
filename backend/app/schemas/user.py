@@ -11,6 +11,7 @@ class UserBase(BaseModel):
     department: Optional[str] = None
     district_code: Optional[str] = "BBSR"
     ward_number: Optional[str] = None
+    state: Optional[str] = "Odisha"
 
 class UserCreate(UserBase):
     password: str

@@ -2,8 +2,7 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, F
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.session import Base
-from geoalchemy2 import Geometry
-from pgvector.sqlalchemy import Vector
+from sqlalchemy.dialects.postgresql import ARRAY
 import enum
 
 
@@ -151,8 +150,9 @@ class Grievance(Base):
     address = Column(Text, nullable=True)
     ward_number = Column(String(20), nullable=True)
     district_code = Column(String(10), nullable=False, default="BBSR")
+    state = Column(String(50), nullable=True, default="Odisha")
     pincode = Column(String(10), nullable=True)
-    geom = Column(Geometry("POINT", srid=4326), nullable=False)
+    geom = Column(String(100), nullable=True)
 
     # ── Media ──
     image_url = Column(String, nullable=True)
@@ -161,7 +161,7 @@ class Grievance(Base):
     document_url = Column(String, nullable=True)
 
     # ── AI Analysis ──
-    embedding = Column(Vector(384))  # SBERT vector
+    embedding = Column(ARRAY(Float), nullable=True)  # SBERT vector
     ai_department_suggestion = Column(String(50), nullable=True)
     ai_priority_suggestion = Column(String(20), nullable=True)
     ai_summary = Column(Text, nullable=True)

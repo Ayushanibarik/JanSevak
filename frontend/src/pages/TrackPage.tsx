@@ -99,12 +99,26 @@ const STEP_HIERARCHY = [
   "closed"
 ];
 
+const generateMockRouting = (dept: string, ward: string, dist: string) => {
+  return [
+    { id: 101, full_name: `Binod Sahu (Ward Officer - ${ward || '12'})`, role: "ward_officer", hierarchy_level: 1, department: dept, district_code: dist },
+    { id: 102, full_name: `Rajesh Patra (JE - ${dept.replace('_', ' ').toUpperCase()})`, role: "junior_engineer", hierarchy_level: 2, department: dept, district_code: dist },
+    { id: 103, full_name: `Suresh Mohanty (AE - ${dept.replace('_', ' ').toUpperCase()})`, role: "assistant_engineer", hierarchy_level: 3, department: dept, district_code: dist },
+    { id: 104, full_name: `Amit Verma (EE - ${dept.replace('_', ' ').toUpperCase()})`, role: "executive_engineer", hierarchy_level: 4, department: dept, district_code: dist },
+    { id: 105, full_name: `Dr. Arindam Das (Municipal Commissioner)`, role: "municipal_commissioner", hierarchy_level: 5, department: "all", district_code: dist },
+    { id: 106, full_name: `Sanjay Singh, IAS (District Collector)`, role: "district_collector", hierarchy_level: 6, department: "all", district_code: dist },
+    { id: 107, full_name: `Priyanka Sen, IAS (State Secretary)`, role: "state_secretary", hierarchy_level: 7, department: "all", district_code: dist },
+    { id: 108, full_name: `Shri Pratap Jena (Urban Development Minister)`, role: "minister", hierarchy_level: 8, department: "all", district_code: dist }
+  ];
+};
+
 export default function TrackPage() {
   const { t, i18n } = useTranslation();
   const [searchParams] = useSearchParams();
   const [tokenInput, setTokenInput] = useState("");
-  const [grievance, setGrievance] = useState<GrievanceDetail | null>(null);
+  const [grievance, setGrievance] = useState<any | null>(null);
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
+  const [routingPath, setRoutingPath] = useState<any[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   
@@ -140,6 +154,15 @@ export default function TrackPage() {
           const timeData = await timeResponse.json();
           setTimeline(timeData);
         }
+
+        // Fetch routing path
+        const routeResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8001'}/grievances/${token}/routing`);
+        if (routeResponse.ok) {
+          const routeData = await routeResponse.json();
+          setRoutingPath(routeData);
+        } else {
+          setRoutingPath(generateMockRouting(data.department, data.ward_number, data.district_code));
+        }
       } else {
         // Fallback to local storage or mock
         fetchFromLocalOrMock(token);
@@ -169,7 +192,10 @@ export default function TrackPage() {
         ward_number: found.ward_number || "Ward 12",
         created_at: found.created_at,
         citizen_feedback_rating: found.citizen_feedback_rating,
+        current_hierarchy_level: found.current_hierarchy_level || 1,
       });
+
+      setRoutingPath(generateMockRouting(found.department, found.ward_number || "12", found.district_code || "BBSR"));
 
       // Generate realistic timeline events for this local grievance
       const events: TimelineEvent[] = [
@@ -236,7 +262,9 @@ export default function TrackPage() {
       district_code: "BBSR",
       ward_number: "Ward 12",
       created_at: new Date(Date.now() - 36 * 3600 * 1000).toISOString(),
+      current_hierarchy_level: 2,
     });
+    setRoutingPath(generateMockRouting("water_supply", "Ward 12", "BBSR"));
 
     setTimeline([
       {
@@ -443,6 +471,88 @@ export default function TrackPage() {
                 </div>
               </div>
             </div>
+
+            {/* Officer Resolution Routing Path */}
+            {routingPath && routingPath.length > 0 && (
+              <div className="detail-card mt-6" style={{ marginTop: "24px" }}>
+                <div className="card-header-gov" style={{ background: "linear-gradient(135deg, #1e3a8a, #3b82f6)", color: "#fff", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <h5 style={{ margin: 0 }}>{i18n.language === "hi" ? "शिकायत समाधान अधिकारी मार्ग" : "Grievance Resolution Routing Path"}</h5>
+                  <span style={{ fontSize: "11px", opacity: 0.9 }}>{grievance.district_code} • {grievance.ward_number}</span>
+                </div>
+                <div className="card-body-gov" style={{ padding: "20px" }}>
+                  <p style={{ fontSize: "13px", color: "#4b5563", marginBottom: "20px" }}>
+                    {i18n.language === "hi" 
+                      ? "नीचे शिकायत निवारण के लिए जिम्मेदार अधिकारियों का पदानुक्रम मार्ग दिया गया है। वर्तमान में उत्तरदायी अधिकारी को रेखांकित किया गया है।" 
+                      : "Below is the hierarchical routing of officers responsible for resolving this grievance. The currently responsible officer is highlighted."}
+                  </p>
+                  
+                  <div style={{ display: "flex", flexDirection: "column", gap: "16px", position: "relative", paddingLeft: "24px", borderLeft: "2px solid #e5e7eb" }}>
+                    {routingPath.map((officer, index) => {
+                      const isPassed = officer.hierarchy_level <= (grievance.current_hierarchy_level || 1);
+                      const isActive = officer.hierarchy_level === (grievance.current_hierarchy_level || 1);
+                      
+                      return (
+                        <div 
+                          key={officer.id || index} 
+                          style={{ 
+                            position: "relative",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "12px",
+                            padding: "10px 14px",
+                            borderRadius: "8px",
+                            background: isActive ? "#eff6ff" : "#f9fafb",
+                            border: isActive ? "2px solid #3b82f6" : "1px solid #e5e7eb",
+                            boxShadow: isActive ? "0 4px 6px -1px rgba(59, 130, 246, 0.1)" : "none",
+                            transition: "all 0.2s"
+                          }}
+                        >
+                          {/* Node Dot */}
+                          <div 
+                            style={{ 
+                              position: "absolute",
+                              left: "-33px",
+                              top: "50%",
+                              transform: "translateY(-50%)",
+                              width: "16px",
+                              height: "16px",
+                              borderRadius: "50%",
+                              border: "3px solid #fff",
+                              background: isActive ? "#3b82f6" : isPassed ? "#10b981" : "#d1d5db",
+                              boxShadow: "0 0 0 1px " + (isActive ? "#3b82f6" : isPassed ? "#10b981" : "#d1d5db"),
+                              zIndex: 2
+                            }}
+                          />
+
+                          {/* Info */}
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <span style={{ fontWeight: "bold", fontSize: "14px", color: isActive ? "#1e3a8a" : "#374151" }}>
+                                {officer.full_name}
+                              </span>
+                              {isActive && (
+                                <span style={{ fontSize: "11px", fontWeight: "bold", background: "#3b82f6", color: "#fff", padding: "2px 8px", borderRadius: "9999px" }}>
+                                  {i18n.language === "hi" ? "वर्तमान अधिकारी" : "CURRENT OFFICER"}
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ display: "flex", gap: "8px", fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
+                              <span>Level {officer.hierarchy_level} ({officer.role.replace('_', ' ').toUpperCase()})</span>
+                              {officer.department && officer.department !== "all" && (
+                                <>
+                                  <span>•</span>
+                                  <span className="capitalize">{officer.department.replace('_', ' ')}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Citizen Feedback Form (Only visible if status is completed) */}
             {grievance.status === "completed" && !grievance.citizen_feedback_rating && !feedbackSuccess && (
